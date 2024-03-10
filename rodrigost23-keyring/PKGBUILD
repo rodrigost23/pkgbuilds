@@ -1,0 +1,22 @@
+# Contributor: Rodrigo Tavares <me@rodrigotavar.es>
+pkgname=rodrigost23-keyring
+pkgver=20220819162816
+pkgrel=1
+pkgdesc="Keyring"
+arch=(any)
+url="https://github.com/rodrigost23/pkgbuilds"
+license=('ISC')
+source=(public.gpg)
+sha256sums=(SKIP)
+depends=()
+
+pkgver() {
+  date --date "$(git log -1 --pretty="format:%ci" public.gpg)" +%Y%m%d%H%M%S
+}
+
+package() {
+  install=rodrigost23-keyring.install
+  depends=(pacrepo-cli)
+  install -dm 7555 "${pkgdir}/usr/share/rodrigost23-keyring"
+	install -Dm755 "public.gpg" "${pkgdir}/usr/share/rodrigost23-keyring/public.gpg"
+}

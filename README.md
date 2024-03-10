@@ -1,6 +1,6 @@
 # PKGBUILDs
 
-Use GitHub Actions for building and packaging a few [AUR](https://aur.archlinux.org) packages and deploy them to [GitHub Releases](https://github.com/jckimble/pkgbuilds/releases) so it can be used as a repository in [Arch Linux](https://www.archlinux.org).  Based on [djpohly/PKGBUILD](https://github.com/djpohly/PKGBUILD).
+Use GitHub Actions for building and packaging a few [AUR](https://aur.archlinux.org) packages and deploy them to [GitHub Releases](https://github.com/rodrigost23/pkgbuilds/releases) so it can be used as a repository in [Arch Linux](https://www.archlinux.org).  Based on [djpohly/PKGBUILD](https://github.com/djpohly/PKGBUILD).
 
 
 ## Using as a pacman repository
@@ -8,9 +8,9 @@ Use GitHub Actions for building and packaging a few [AUR](https://aur.archlinux.
 To use as custom repository in [Arch Linux](https://www.archlinux.org), add to file `/etc/pacman.conf`:
 
 ```
-[jckimble]
+[rodrigost23]
 SigLevel = Optional TrustAll
-Server = https://github.com/jckimble/pkgbuilds/releases/download/repository
+Server = https://github.com/rodrigost23/pkgbuilds/releases/download/repository
 ```
 
 ## Customizing
