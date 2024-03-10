@@ -1,7 +1,8 @@
 name: Update Package
 
 on:
-  pull_request:
+  # TODO: Remove this workflow
+  workflow_dispatch: 
 
 permissions:
   packages: write
