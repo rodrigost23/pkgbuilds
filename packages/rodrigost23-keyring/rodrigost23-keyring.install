@@ -1,9 +1,3 @@
-post_install() {
-	post_upgrade
-	usr/bin/pacrepo-cli remove rodrigost23
-	usr/bin/pacrepo-cli add rodrigost23 https://github.com/rodrigost23/pkgbuilds/releases/download/repository
-}
-
 post_upgrade() {
 	usr/bin/pacman-key -a usr/share/rodrigost23-keyring/public.gpg
 	KEY=$(gpg --show-keys --keyid-format=long usr/share/rodrigost23-keyring/public.gpg | grep 'pub' | awk 'match($2,/[A-Z0-9]{16}/){print substr($2,RSTART,RLENGTH)}')
@@ -13,5 +7,4 @@ post_upgrade() {
 pre_remove() {
 	KEY=$(gpg --show-keys --keyid-format=long usr/share/rodrigost23-keyring/public.gpg | grep 'pub' | awk 'match($2,/[A-Z0-9]{16}/){print substr($2,RSTART,RLENGTH)}')
 	usr/bin/pacman-key -d ${KEY}
-	usr/bin/pacrepo-cli remove rodrigost23
 }
