@@ -36,6 +36,7 @@ jobs:
           path: packages
           diff_relative: true
           json: true
+          escape_json: false
       - name: Print deleted files
         run: echo ${{ steps.deleted-files.outputs.deleted_files }}
       - name: Get added files
@@ -47,6 +48,7 @@ jobs:
           dir_names: true
           dir_names_max_depth: 1
           json: true
+          escape_json: false
       - name: Print added files
         run: echo ${{ steps.added-files.outputs.added_files }}
 
