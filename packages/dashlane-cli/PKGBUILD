@@ -1,0 +1,25 @@
+# Maintainer: Rodrigo Tavares
+_pkgname=dashlane-cli
+pkgname=${_pkgname}-bin
+pkgver=v6.2405.0
+pkgrel=1
+pkgdesc="Dashlane CLI"
+arch=('x86_64')
+url="https://github.com/Dashlane/${_pkgname}"
+license=('Apache-2.0')
+provides=("${_pkgname}")
+conflicts=("${_pkgname}-git")
+
+sha256sums_x86_64=('ce06c1ac137d742617998111cd393e0472538a7a7634d56c884cf5e5ecd18335')
+source_x86_64=("dcli::https://github.com/Dashlane/${_pkgname}/releases/download/${pkgver}/dcli-linux-x64")
+noextract=('dcli')
+
+OPTIONS=(!strip)
+
+package() {
+  install -d -m755 "${pkgdir}/opt/${pkgname}"
+  install -d -m755 "${pkgdir}/opt/${pkgname}/bin"
+  install -d -m755 "${pkgdir}/usr/bin"
+  install -m755 "${srcdir}/dcli" "${pkgdir}/opt/${pkgname}/bin/dcli"
+  ln -s "/opt/${pkgname}/bin/dcli" "${pkgdir}/usr/bin/dcli"
+}
