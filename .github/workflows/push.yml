@@ -3,7 +3,7 @@ name: Add/Remove Packages
 on:
   push:
     branches:
-      - master
+      - main
 
 permissions:
   packages: write
@@ -112,7 +112,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: master
+        ref: main
     - name: Get current packages
       uses: robinraju/release-downloader@v1.9
       with:

@@ -3,7 +3,7 @@ name: Setup
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'config.json'
       - '.github/workflows/setup.yml'
@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-        ref: master
+        ref: main
     - id: config
       uses: ./.github/actions/load-config
     - id: get-key
@@ -110,5 +110,5 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add ${{ needs.variables.outputs.enc-gpg }} ${{ needs.variables.outputs.pub-gpg }}
           git commit -m "chore: Generate GPG Key"
-          git push -u origin master
+          git push -u origin main
 

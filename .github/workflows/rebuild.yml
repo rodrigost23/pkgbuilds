@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
     paths:
       - '.github/workflows/rebuild.yml'
   workflow_run:
@@ -34,7 +34,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-        ref: master
+        ref: main
     - id: config
       uses: ./.github/actions/load-config
     - id: set-matrix
@@ -75,7 +75,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-        ref: master
+        ref: main
     - name: Build ${{ matrix.package }}
       uses: ./.github/actions/archlinux
       env:
@@ -103,7 +103,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: master
+        ref: main
     - name: Get current packages
       uses: robinraju/release-downloader@v1.9
       with:

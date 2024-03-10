@@ -117,7 +117,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add ${{ needs.variables.outputs.enc-gpg }} ${{ needs.variables.outputs.pub-gpg }}
           git commit -m "Update GPG Key"
-          git push -u origin master
+          git push -u origin main
       - name: Rebuild Repo
         if: ${{ steps.check.outputs.update == 'true' }}
         uses: dev-drprasad/delete-tag-and-release@v1.0.1
@@ -142,7 +142,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-        ref: master
+        ref: main
     - name: Build ${{ matrix.package }}
       uses: ./.github/actions/archlinux
       env:
@@ -172,7 +172,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: master
+        ref: main
     - name: Get current packages
       uses: robinraju/release-downloader@v1.9
       with:

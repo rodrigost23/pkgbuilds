@@ -15,7 +15,7 @@ Server = https://github.com/jckimble/pkgbuilds/releases/download/repository
 
 ## Customizing
 
-To build AUR packages of your own selection, fork this repository.  The master branch contains most of the build actions.
+To build AUR packages of your own selection, fork this repository.  The main branch contains most of the build actions.
 
   - Fork this GitHub repository.
   - Add Secrets (Pick one)
