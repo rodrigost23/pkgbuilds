@@ -1,5 +1,5 @@
 {
-  "pub_gpg": "rodrigost23-keyring/public.gpg",
+  "pub_gpg": "packages/rodrigost23-keyring/public.gpg",
   "name": "Rodrigo Tavares (Github Actions)",
   "email": "me@rodrigotavar.es",
   "repo_name": "rodrigost23"

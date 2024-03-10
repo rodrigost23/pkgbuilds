@@ -33,23 +33,22 @@ jobs:
         id: deleted-files
         uses: tj-actions/changed-files@v42
         with:
-          files_ignore: .github/**
+          path: packages
+          diff_relative: true
           json: true
-          json_raw_format: true
-      - run: echo ${{ steps.deleted-files.outputs.deleted_files }}
-      - run: echo ${{ steps.deleted-files.outputs.other_deleted_files }}
+      - name: Print deleted files
+        run: echo ${{ steps.deleted-files.outputs.deleted_files }}
       - name: Get added files
         id: added-files
         uses: tj-actions/changed-files@v42
         with:
-          files_ignore: .github/**
+          path: packages
+          diff_relative: true
           dir_names: true
           dir_names_max_depth: 1
-          dir_names_exclude_root: true
           json: true
-          json_raw_format: true
-      - run: echo ${{ steps.added-files.outputs.deleted_files }}
-      - run: echo ${{ steps.added-files.outputs.other_deleted_files }}
+      - name: Print added files
+        run: echo ${{ steps.added-files.outputs.added_files }}
 
 
   added:
@@ -73,14 +72,14 @@ jobs:
         SECRET: ${{ secrets.ENCRYPTION_KEY }}
         GPGKEY: ${{ needs.variables.outputs.enc-gpg }}
       with:
-        dir: ${{ matrix.package }}
+        dir: packages/${{ matrix.package }}
         run: makepkg -sr --sign -C -c --noconfirm --noprogressbar
     - name: Upload new package ${{ matrix.package }}
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         tag: repository
-        file: ${{ matrix.package }}/*.pkg.*
+        file: packages/${{ matrix.package }}/*.pkg.*
         file_glob: true
         overwrite: false
 
@@ -100,7 +99,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: repository
-        assets: ${{ matrix.package }}*
+        assets: packages/${{ matrix.package }}*
 
   build-repo:
     runs-on: ubuntu-latest

@@ -26,7 +26,7 @@ jobs:
       repo-name: ${{ steps.config.outputs.repo-name }}
       packager: ${{ steps.config.outputs.packager }}
 
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      packages: ${{ steps.set-packages.outputs.packages }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -34,17 +34,8 @@ jobs:
         ref: main
     - id: config
       uses: ./.github/actions/load-config
-    - id: set-matrix
-      run: |
-        set_output () {
-          if [[ -z "${ACT}" ]]; then
-            echo "${1}=${2}" | tee -a "${GITHUB_OUTPUT}"
-          else
-            echo "set-output name=${1}::${2}"
-            echo "::set-output name=${1}::${2}"
-          fi
-        }
-        set_output matrix "`find . -iname 'PKGBUILD' -exec bash -c \"basename \\$(dirname \\"{}\\")\" \\; | jq -R -s -c 'split(\"\n\")[:-1]'`"
+    - id: set-packages
+      uses: ./.github/actions/list-packages
 
   updateExpiry:
     runs-on: ubuntu-latest
@@ -119,12 +110,9 @@ jobs:
           git commit -m "Update GPG Key"
           git push -u origin main
       - name: Rebuild Repo
-        if: ${{ steps.check.outputs.update == 'true' }}
-        uses: dev-drprasad/delete-tag-and-release@v1.0.1
-        with:
-          delete_release: true # default: false
-          tag_name: repository
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete repository -y --cleanup-tag --repo ${{ github.repository }} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-package:
     runs-on: ubuntu-latest
@@ -135,7 +123,7 @@ jobs:
 
     strategy:
       matrix:
-        package: ${{ fromJson(needs.variables.outputs.matrix) }}
+        package: ${{ fromJson(needs.variables.outputs.packages) }}
     
     steps:
     - uses: actions/checkout@v4
@@ -149,14 +137,14 @@ jobs:
         SECRET: ${{ secrets.ENCRYPTION_KEY }}
         GPGKEY: ${{ needs.variables.outputs.enc-gpg }}
       with:
-        dir: ${{ matrix.package }}
+        dir: packages/${{ matrix.package }}
         run: makepkg -sr --sign -C -c --noconfirm --noprogressbar
     - name: Upload new package ${{ matrix.package }}
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         tag: repository
-        file: ${{ matrix.package }}/*.pkg.*
+        file: packages/${{ matrix.package }}/*.pkg.*
         file_glob: true
         overwrite: false
 

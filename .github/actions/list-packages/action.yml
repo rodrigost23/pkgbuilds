@@ -1,0 +1,22 @@
+name: Load config.json
+description: Load base configuration
+outputs:
+  packages:
+    description: "List of packages"
+    value: ${{ steps.packages.outputs.packages }}
+
+runs:
+  using: composite
+  steps:
+    - id: packages
+      shell: bash
+      run: |
+        set_output () {
+          if [[ -z "${ACT}" ]]; then
+            echo "${1}=${2}" | tee -a "${GITHUB_OUTPUT}"
+          else
+            echo "set-output name=${1}::${2}"
+            echo "::set-output name=${1}::${2}"
+          fi
+        }
+        set_output packages "$(find . -iname 'PKGBUILD' -exec bash -c "basename \$(dirname "{}")" \; | jq -R -s -c 'split("\n")[:-1]')"
