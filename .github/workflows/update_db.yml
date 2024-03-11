@@ -14,7 +14,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: "release"
+  group: "build_db"
+  cancel-in-progress: true
 
 jobs:
   variables:

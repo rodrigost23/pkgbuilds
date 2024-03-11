@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'config.json'
+      - '.github/workflows/setup.yml'
+      - '.github/workflows/rebuild.yml'
 
 permissions:
   packages: write
