@@ -36,4 +36,15 @@ describe('parseNode', () => {
     const array = getValue('( 23 "str" \'raw\' )')
     expect(util.parseNode(array)).toStrictEqual([23, 'str', 'raw'])
   })
+
+  it('should return null for empty node', async () => {
+    const empty = getValue('')
+    expect(util.parseNode(empty)).toBe('')
+  })
+
+  it('should return null for undefined node', async () => {
+    expect(() => {
+      util.parseNode(null)
+    }).toThrow()
+  })
 })

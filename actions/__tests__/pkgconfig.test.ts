@@ -30,4 +30,36 @@ describe('PkgConfig', () => {
       expect(() => PkgConfig.read(input)).toThrow()
     })
   })
+
+  describe('isValidConfig', () => {
+    it('should return false for non-object', () => {
+      expect(PkgConfig['isValidConfig']('')).toBe(false)
+    })
+
+    it('should return false for missing type', () => {
+      expect(PkgConfig['isValidConfig']({ repo: 'user/repo' })).toBe(false)
+    })
+
+    it('should return false for invalid type', () => {
+      expect(
+        PkgConfig['isValidConfig']({ type: 'gitlab', repo: 'user/repo' })
+      ).toBe(false)
+    })
+
+    it('should return false for missing repo', () => {
+      expect(PkgConfig['isValidConfig']({ type: 'github' })).toBe(false)
+    })
+
+    it('should return false for non-string repo', () => {
+      expect(PkgConfig['isValidConfig']({ type: 'github', repo: 123 })).toBe(
+        false
+      )
+    })
+
+    it('should return true for valid config', () => {
+      expect(
+        PkgConfig['isValidConfig']({ type: 'github', repo: 'user/repo' })
+      ).toBe(true)
+    })
+  })
 })
