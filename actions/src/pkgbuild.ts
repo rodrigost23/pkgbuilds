@@ -23,7 +23,7 @@ export class PkgBuild {
   //   })
   // }
 
-  static async read(input: string) {
+  static async read(input: string): Promise<PkgBuild> {
     const parser = await initializeParser()
     const tree = parser.parse(input)
     const sources: string[] = []
@@ -31,7 +31,7 @@ export class PkgBuild {
       const lhs = node.firstNamedChild
       const rhs = node.lastNamedChild
       if (lhs?.text.startsWith('sources') && rhs?.type === 'array') {
-        sources.push(...(<string[]>util.parseNode(rhs)))
+        sources.push(...(util.parseNode(rhs) as string[]))
       }
     }
     return new PkgBuild(sources)

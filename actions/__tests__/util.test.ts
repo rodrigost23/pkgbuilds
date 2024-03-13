@@ -2,7 +2,7 @@ import { initializeParser } from 'bash-language-server/out/parser'
 import * as Parser from 'web-tree-sitter'
 import * as util from '../src/util'
 
-function getValue(input: string) {
+function getValue(input: string): Parser.SyntaxNode | null {
   return (
     parser.parse(`var=${input}`).rootNode.namedChild(0)?.lastNamedChild ?? null
   )

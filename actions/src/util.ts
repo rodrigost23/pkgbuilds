@@ -1,6 +1,8 @@
 import { SyntaxNode } from 'web-tree-sitter'
 
-export function parseNode(node: SyntaxNode | null): string | number | any[] {
+type ParsedNode = string | number | ParsedNode[]
+
+export function parseNode(node: SyntaxNode | null): ParsedNode {
   if (node?.type === 'raw_string') {
     return node.text.replace(/^'(.*)'$/, '$1')
   } else if (node?.type === 'string') {
