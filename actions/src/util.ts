@@ -58,3 +58,7 @@ function parseWord(node: SyntaxNode): string | number {
 function parseArray(node: SyntaxNode, expand: boolean): ParsedNode[] {
   return node.namedChildren.map(item => parseNode(item, expand))
 }
+
+export function isObject(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x != null
+}
