@@ -27,9 +27,9 @@ describe('parseNode', () => {
     expect(util.parseNode(word)).toStrictEqual(1)
   })
 
-  it('should return parsed float', async () => {
+  it('should not parse float', async () => {
     const word = getValue('1.5')
-    expect(util.parseNode(word)).toStrictEqual(1.5)
+    expect(util.parseNode(word)).toStrictEqual('1.5')
   })
 
   it('should return array of values', async () => {

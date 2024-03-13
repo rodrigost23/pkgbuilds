@@ -1,5 +1,5 @@
 import { initializeParser } from 'bash-language-server/out/parser'
-import * as util from './util'
+import * as util from '../util'
 // import * as Parser from 'web-tree-sitter'
 
 export class PkgBuild {
@@ -30,8 +30,8 @@ export class PkgBuild {
     for (const node of tree.rootNode.descendantsOfType('variable_assignment')) {
       const lhs = node.firstNamedChild
       const rhs = node.lastNamedChild
-      if (lhs?.text.startsWith('sources') && rhs?.type === 'array') {
-        sources.push(...(util.parseNode(rhs) as string[]))
+      if (lhs?.text.startsWith('source') && rhs?.type === 'array') {
+        sources.push(...(util.parseNode(rhs, true) as string[]))
       }
     }
     return new PkgBuild(sources)
