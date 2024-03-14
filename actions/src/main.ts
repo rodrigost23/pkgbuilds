@@ -1,4 +1,6 @@
 import * as core from '@actions/core'
+import * as fs from 'fs'
+import { PkgBuild } from './model/pkgbuild'
 
 /**
  * The main function for the action.
@@ -6,19 +8,39 @@ import * as core from '@actions/core'
  */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    // const configFile = core.getInput('config-file', { required: true })
+    const packagesPath = core.getInput('packages-path', { required: true })
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    const pkgbuildFiles = await getPkgbuildFiles(packagesPath)
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    core.debug(new Date().toTimeString())
+    for (const pkgbuildFile of pkgbuildFiles) {
+      const string = fs.readFileSync(pkgbuildFile, 'utf8')
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+      const pkgbuild = await PkgBuild.read(string)
+
+      fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
+    }
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
   }
+}
+
+async function getPkgbuildFiles(packagesPath: fs.PathLike): Promise<string[]> {
+  // return list of all PKGBUILD files under packagesPath
+  const pkgbuildFiles = []
+  const dirents = await fs.promises.readdir(packagesPath, {
+    withFileTypes: true
+  })
+  for (const dirent of dirents) {
+    if (dirent.isDirectory()) {
+      const files = await fs.promises.readdir(`${packagesPath}/${dirent.name}`)
+      for (const file of files) {
+        if (file === 'PKGBUILD') {
+          pkgbuildFiles.push(`${packagesPath}/${dirent.name}/PKGBUILD`)
+        }
+      }
+    }
+  }
+  return pkgbuildFiles
 }

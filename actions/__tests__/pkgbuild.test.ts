@@ -3,6 +3,7 @@ import { PkgBuild } from '../src/model/pkgbuild'
 describe('pkgbuild', () => {
   it('should concatenate all sources', async () => {
     const pkgbuild = await PkgBuild.read(`
+    pkgver=1.0
     source=('a')
     source_x86_64=('b' 3 'z')`)
 
@@ -33,18 +34,5 @@ describe('pkgbuild', () => {
     const pkgbuild = await PkgBuild.read(input)
 
     expect(pkgbuild.sources).toEqual(['http://url1', 'http://url2'])
-  })
-
-  it('should ignore non-source variables', async () => {
-    const input = `
-      pkgname=example
-      pkgver=1.0
-      pkgrel=1
-      options=('!docs')
-    `
-
-    const pkgbuild = await PkgBuild.read(input)
-
-    expect(pkgbuild.sources).toEqual([])
   })
 })

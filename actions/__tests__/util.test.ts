@@ -48,3 +48,30 @@ describe('parseNode', () => {
     }).toThrow()
   })
 })
+
+describe('replaceValue', () => {
+  it('should replace value in string', () => {
+    const original = 'Hello world'
+    const position = {
+      start: { row: 0, column: 6 },
+      end: { row: 0, column: 11 }
+    }
+    const newValue = 'there'
+
+    const result = util.replaceValue({ original, position, value: newValue })
+
+    expect(result).toBe('Hello there')
+  })
+
+  it('should throw error if position spans multiple lines', () => {
+    const original = 'Hello\nworld'
+    const position = {
+      start: { row: 0, column: 0 },
+      end: { row: 1, column: 5 }
+    }
+
+    expect(() => {
+      util.replaceValue({ original, position, value: 'test' })
+    }).toThrow()
+  })
+})

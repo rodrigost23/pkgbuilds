@@ -1,4 +1,7 @@
+import { initializeParser } from 'bash-language-server/out/parser'
+import * as Parser from 'web-tree-sitter'
 import { SyntaxNode } from 'web-tree-sitter'
+import { Position } from './model/position'
 
 type ParsedNode = string | number | ParsedNode[]
 
@@ -61,4 +64,54 @@ function parseArray(node: SyntaxNode, expand: boolean): ParsedNode[] {
 
 export function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x != null
+}
+
+let _parser: Parser | undefined
+
+/**
+ * Gets the parser instance, initializing it if needed.
+ * Returns a Promise that resolves to the Parser instance.
+ */
+export async function getParser(): Promise<Parser> {
+  if (_parser !== undefined) {
+    return _parser
+  }
+
+  const parser = await initializeParser()
+  _parser = parser
+  return parser
+}
+
+/**
+ * Replaces a value in a string at a given position.
+ *
+ * Takes in the original string, a position object with start and end properties,
+ * and the new value to insert. Splits the string into lines, inserts the new
+ * value into the correct line at the given column, and joins the lines back together.
+ * Returns the resulting string.
+ */
+export function replaceValue({
+  original,
+  position,
+  value
+}: {
+  original: string
+  position: Position
+  value: string
+}): string {
+  if (position.start.row !== position.end.row) {
+    throw new Error('Cannot replace a multi-line value')
+  }
+
+  const lines = original.split('\n')
+  const output: string[] = []
+
+  for (let i = 0; i < lines.length; i++) {
+    if (i === position?.start.row) {
+      const start = lines[i].slice(0, position.start.column)
+      const end = lines[i].slice(position.end.column)
+      output[i] = `${start}${value}${end}`
+    }
+  }
+  return output.join('\n')
 }
