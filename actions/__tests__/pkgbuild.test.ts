@@ -35,4 +35,39 @@ describe('pkgbuild', () => {
 
     expect(pkgbuild.sources).toEqual(['http://url1', 'http://url2'])
   })
+
+  it('should throw error if a variable is missing', async () => {
+    const noPkgVer = `
+      pkgname=example
+      source=("http://url")
+    `
+    await expect(async () => {
+      await PkgBuild.read(noPkgVer)
+    }).rejects.toThrow()
+
+    const noSource = `
+      pkgver=1.0
+    `
+    await expect(async () => {
+      await PkgBuild.read(noSource)
+    }).rejects.toThrow()
+  })
+
+  describe('stringify', () => {
+    it('should replace a changed pkgVer', async () => {
+      const pkgBuild = await PkgBuild.read(`
+        pkgname=example  
+        pkgver=1.0
+        source=("http://url")
+      `)
+
+      pkgBuild.pkgVer = '2.0'
+
+      expect(pkgBuild.stringify()).toBe(`
+        pkgname=example  
+        pkgver=2.0
+        source=("http://url")
+      `)
+    })
+  })
 })

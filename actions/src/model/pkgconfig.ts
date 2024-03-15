@@ -8,21 +8,21 @@ export interface GitHubPkg {
   repo: string
 }
 
-type IPkgConfig = GitHubPkg
+export type IPackageConfig = GitHubPkg
 
-export class PkgConfig implements IPkgConfig {
+export class PackageConfig implements IPackageConfig {
   private constructor(
     readonly type: PkgType,
     readonly repo: string
   ) {}
 
   /**
-   * Checks if the given object is a valid {@link IPkgConfig}.
+   * Checks if the given object is a valid {@link IPackageConfig}.
    *
    * @param obj - The object to check
-   * @returns True if obj is a valid {@link IPkgConfig}, `false` otherwise
+   * @returns True if obj is a valid {@link IPackageConfig}, `false` otherwise
    */
-  private static isValidConfig(obj: unknown): obj is IPkgConfig {
+  static isValidConfig(obj: unknown): obj is IPackageConfig {
     if (!isObject(obj)) {
       return false
     }
@@ -31,15 +31,15 @@ export class PkgConfig implements IPkgConfig {
   }
 
   /**
-   * Parses the given JSON string as a {@link PkgConfig} config object.
+   * Parses the given JSON string as a {@link PackageConfig} config object.
    *
    * @param input - The JSON string to parse
-   * @returns The parsed {@link PkgConfig} object if valid, throws if invalid
+   * @returns The parsed {@link PackageConfig} object if valid, throws if invalid
    */
-  static read(input: string): PkgConfig {
+  static read(input: string): PackageConfig {
     const config = JSON.parse(input)
     if (this.isValidConfig(config)) {
-      return config
+      return new PackageConfig(config.type, config.repo)
     }
 
     throw new Error('Invalid config')

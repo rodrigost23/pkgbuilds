@@ -31,7 +31,7 @@ export class PkgBuild {
 
         positions = {
           pkgVer: {
-            start: lhs.startPosition,
+            start: rhs.startPosition,
             end: rhs.endPosition
           }
         }
@@ -41,14 +41,11 @@ export class PkgBuild {
       }
     }
 
-    if (!pkgVer) {
+    if (!pkgVer || !positions) {
       throw new Error('Could not parse pkgVer')
     }
     if (!sources.length) {
       throw new Error('Could not parse sources')
-    }
-    if (!positions) {
-      throw new Error('Could not parse positions')
     }
 
     return new PkgBuild(input, pkgVer, sources, positions)

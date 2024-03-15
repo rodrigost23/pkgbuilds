@@ -63,7 +63,7 @@ function parseArray(node: SyntaxNode, expand: boolean): ParsedNode[] {
 }
 
 export function isObject(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x != null
+  return typeof x === 'object' && !Array.isArray(x) && x != null
 }
 
 let _parser: Parser | undefined
@@ -111,6 +111,8 @@ export function replaceValue({
       const start = lines[i].slice(0, position.start.column)
       const end = lines[i].slice(position.end.column)
       output[i] = `${start}${value}${end}`
+    } else {
+      output[i] = lines[i]
     }
   }
   return output.join('\n')
