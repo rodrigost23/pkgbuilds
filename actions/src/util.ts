@@ -3,6 +3,11 @@ import * as Parser from 'web-tree-sitter'
 import { SyntaxNode } from 'web-tree-sitter'
 import { Position } from './model/position'
 
+// Force ncc to copy the wasm binary
+require.resolve(
+  'bash-language-server/node_modules/web-tree-sitter/tree-sitter.wasm'
+)
+
 type ParsedNode = string | number | ParsedNode[]
 
 export function parseNode(node: SyntaxNode | null, expand = false): ParsedNode {
