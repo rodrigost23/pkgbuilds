@@ -1,6 +1,8 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
+import { Config } from './model/config'
 import { PkgBuild } from './model/pkgbuild'
+import { findLatestGitHub } from './parser/github'
 
 /**
  * The main function for the action.
@@ -8,17 +10,25 @@ import { PkgBuild } from './model/pkgbuild'
  */
 export async function run(): Promise<void> {
   try {
-    // const configFile = core.getInput('config-file', { required: true })
+    const configFile = core.getInput('config-file', { required: true })
     const packagesPath = core.getInput('packages-path', { required: true })
 
+    const config = await Config.readFile(configFile)
     const pkgbuildFiles = await getPkgbuildFiles(packagesPath)
 
-    for (const pkgbuildFile of pkgbuildFiles) {
-      const string = fs.readFileSync(pkgbuildFile, 'utf8')
+    for (const [id, pkg] of Object.entries(config.packages)) {
+      const pkgbuildFile = pkgbuildFiles.find(file => file.includes(id))
 
-      const pkgbuild = await PkgBuild.read(string)
+      if (!pkgbuildFile) {
+        core.warning(`No PKGBUILD found for package ${id}`)
+        continue
+      }
 
-      fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
+      if (pkg.type === 'github') {
+        const pkgbuild = await PkgBuild.readFile(pkgbuildFile)
+        pkgbuild.pkgVer = await findLatestGitHub(pkg.repo)
+        fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
+      }
     }
   } catch (error) {
     // Fail the workflow run if an error occurs

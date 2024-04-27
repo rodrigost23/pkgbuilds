@@ -1,3 +1,5 @@
+import { PathLike } from 'fs'
+import { readFile } from 'fs/promises'
 import { isObject as isRecord } from '../util'
 import { PackageConfig } from './pkgconfig'
 
@@ -45,5 +47,15 @@ export class Config implements IConfig {
     }
 
     throw new Error('Invalid config')
+  }
+
+  /**
+   * Reads a configuration from a file and returns a Config object.
+   *
+   * @param path The path to the config file.
+   * @returns The parsed {@link Config} object.
+   */
+  static async readFile(path: PathLike): Promise<Config> {
+    return Config.read(await readFile(path, 'utf-8'))
   }
 }

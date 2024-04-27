@@ -3,7 +3,7 @@
   "packages": {
     "dashlane-cli": {
       "type": "github",
-      "repo": "Daslane/dashlane-cli"
+      "repo": "Dashlane/dashlane-cli"
     }
   }
 }

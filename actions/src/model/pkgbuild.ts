@@ -1,3 +1,5 @@
+import { PathLike } from 'fs'
+import { readFile } from 'fs/promises'
 import * as util from '../util'
 import { Position } from './position'
 
@@ -49,6 +51,10 @@ export class PkgBuild {
     }
 
     return new PkgBuild(input, pkgVer, sources, positions)
+  }
+
+  static async readFile(path: PathLike): Promise<PkgBuild> {
+    return PkgBuild.read(await readFile(path, 'utf-8'))
   }
 
   stringify(): string {
