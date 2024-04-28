@@ -1,8 +1,11 @@
 import * as core from '@actions/core'
+import { createHash } from 'crypto'
 import * as fs from 'fs'
 import { Config } from './model/config'
 import { PkgBuild } from './model/pkgbuild'
 import { findLatestGitHub } from './parser/github'
+
+const _fetch = fetch
 
 /**
  * The main function for the action.
@@ -17,6 +20,7 @@ export async function run(): Promise<void> {
     const pkgbuildFiles = await getPkgbuildFiles(packagesPath)
 
     for (const [id, pkg] of Object.entries(config.packages)) {
+      core.startGroup(id)
       const pkgbuildFile = pkgbuildFiles.find(file => file.includes(id))
 
       if (!pkgbuildFile) {
@@ -25,10 +29,28 @@ export async function run(): Promise<void> {
       }
 
       if (pkg.type === 'github') {
-        const pkgbuild = await PkgBuild.readFile(pkgbuildFile)
+        let pkgbuild = await PkgBuild.readFile(pkgbuildFile)
         pkgbuild.pkgVer = await findLatestGitHub(pkg.repo)
+        pkgbuild = await PkgBuild.read(pkgbuild.stringify())
+        pkgbuild.checksums = []
+        for (const source of pkgbuild.sources) {
+          core.info(`Downloading source ${source} to calculate checksum`)
+          const response = await _fetch(
+            source.replace(/(?:.*?::)(https?.*$)/, '$1')
+          )
+
+          const data = new Uint8Array(await response.arrayBuffer())
+          if (data.length > 0) {
+            const checksum = createHash('sha256').update(data).digest('hex')
+            core.info(`Calculated sha256 sum: ${checksum}`)
+            pkgbuild.checksums.push(checksum)
+          } else {
+            core.setFailed(`Could not calculate checksum for source ${source}`)
+          }
+        }
         fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
       }
+      core.endGroup()
     }
   } catch (error) {
     // Fail the workflow run if an error occurs

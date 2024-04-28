@@ -4,6 +4,7 @@ import * as util from '../util'
 import { Position } from './position'
 
 interface Positions {
+  checksums: Position
   pkgVer: Position
 }
 
@@ -11,6 +12,7 @@ export class PkgBuild {
   private constructor(
     private readonly original: string,
     public pkgVer: string,
+    public checksums: string[],
     readonly sources: string[],
     private readonly positions: Positions
   ) {}
@@ -18,7 +20,9 @@ export class PkgBuild {
   static async read(input: string): Promise<PkgBuild> {
     const tree = (await util.getParser()).parse(input)
     const sources: string[] = []
-    let positions: Positions | undefined
+    const checksums: string[] = []
+    let checksumsPosition: Position | undefined
+    let pkgVerPosition: Position | undefined
     let pkgVer: string | undefined
 
     for (const node of tree.rootNode.descendantsOfType('variable_assignment')) {
@@ -31,26 +35,39 @@ export class PkgBuild {
       ) {
         pkgVer = rhs.text
 
-        positions = {
-          pkgVer: {
-            start: rhs.startPosition,
-            end: rhs.endPosition
-          }
+        pkgVerPosition = {
+          start: rhs.startPosition,
+          end: rhs.endPosition
         }
       }
       if (lhs?.text.startsWith('source') && rhs?.type === 'array') {
         sources.push(...(util.parseNode(rhs, true) as string[]))
       }
+      if (lhs?.text.startsWith('sha256sum') && rhs?.type === 'array') {
+        checksums.push(...(util.parseNode(rhs, true) as string[]))
+        checksumsPosition = {
+          start: rhs.startPosition,
+          end: rhs.endPosition
+        }
+      }
     }
 
-    if (!pkgVer || !positions) {
+    if (!pkgVer || !pkgVerPosition) {
       throw new Error('Could not parse pkgVer')
+    }
+    if (!checksums.length || !checksumsPosition) {
+      throw new Error('Could not parse checksums')
     }
     if (!sources.length) {
       throw new Error('Could not parse sources')
     }
 
-    return new PkgBuild(input, pkgVer, sources, positions)
+    const positions = {
+      checksums: checksumsPosition,
+      pkgVer: pkgVerPosition
+    }
+
+    return new PkgBuild(input, pkgVer, checksums, sources, positions)
   }
 
   static async readFile(path: PathLike): Promise<PkgBuild> {
@@ -58,10 +75,18 @@ export class PkgBuild {
   }
 
   stringify(): string {
-    return util.replaceValue({
+    let result = util.replaceValue({
       original: this.original,
       position: this.positions.pkgVer,
       value: this.pkgVer
     })
+
+    result = util.replaceValue({
+      original: result,
+      position: this.positions.checksums,
+      value: `('${this.checksums.join("' '")}')`
+    })
+
+    return result
   }
 }
