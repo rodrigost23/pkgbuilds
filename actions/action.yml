@@ -1,23 +1,18 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Update PKGBUILD'
+description: 'Updates a PKGBUILD sources and checksums when a new version is available'
+author: 'Rodrigo Tavares <me@rodrigotavar.es>'
 
-# Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
   icon: 'heart'
   color: 'red'
 
-# Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  config-file:
+    description: The path to the configuration file JSON
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+  packages-path:
+    description: The path to the packages directory
+    required: true
 
 runs:
   using: node20

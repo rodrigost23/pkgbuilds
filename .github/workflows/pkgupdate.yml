@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - id: config
-      uses: ./.github/actions/update-package
+      uses: ./actions
       with:
         config-file: packages-config.json
         packages-path: packages
