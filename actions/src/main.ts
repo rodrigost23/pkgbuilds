@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import { createHash } from 'crypto'
 import * as fs from 'fs'
+import { Git } from './git'
 import { Config } from './model/config'
 import { PkgBuild } from './model/pkgbuild'
 import { findLatestGitHub } from './parser/github'
@@ -18,6 +19,8 @@ export async function run(): Promise<void> {
 
     const config = await Config.readFile(configFile)
     const pkgbuildFiles = await getPkgbuildFiles(packagesPath)
+
+    const git = new Git(packagesPath, Object.keys(config.packages))
 
     for (const [id, pkg] of Object.entries(config.packages)) {
       core.startGroup(id)
@@ -45,12 +48,21 @@ export async function run(): Promise<void> {
             core.info(`Calculated sha256 sum: ${checksum}`)
             pkgbuild.checksums.push(checksum)
           } else {
-            core.setFailed(`Could not calculate checksum for source ${source}`)
+            throw new Error(`Could not calculate checksum for source ${source}`)
           }
         }
         fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
       }
       core.endGroup()
+    }
+
+    core.info('Creating commit...')
+    const commit = await git.commit()
+    if (commit.commit.trim().length > 0) {
+      core.info(`Pushing commit ${commit.commit}...`)
+      await git.push()
+    } else {
+      core.info('No change.')
     }
   } catch (error) {
     // Fail the workflow run if an error occurs
