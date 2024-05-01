@@ -7,6 +7,10 @@ branding:
   color: 'red'
 
 inputs:
+  github-token:
+    description: The GitHub token used to create an authenticated client
+    default: ${{ github.token }}
+    required: false
   config-file:
     description: The path to the configuration file JSON
     required: true

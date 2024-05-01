@@ -11,7 +11,6 @@ export class Git {
     const {
       GITHUB_WORKSPACE,
       GITHUB_ACTOR,
-      GITHUB_TOKEN,
       GITHUB_SERVER_URL,
       GITHUB_REPOSITORY
     } = process.env
@@ -19,19 +18,16 @@ export class Git {
     if (
       GITHUB_WORKSPACE === undefined ||
       GITHUB_ACTOR === undefined ||
-      GITHUB_TOKEN === undefined ||
       GITHUB_SERVER_URL === undefined ||
       GITHUB_REPOSITORY === undefined
     ) {
-      // TODO: Exit with error
-      core.setFailed('Missing GitHub environment variable(s)')
-      return
+      throw new Error('Missing GitHub environment variable(s)')
     }
 
     this.git.addConfig('safe.directory', GITHUB_WORKSPACE)
     const url = new URL(GITHUB_REPOSITORY, GITHUB_SERVER_URL)
     url.username = GITHUB_ACTOR
-    url.password = GITHUB_TOKEN
+    url.password = core.getInput('github-token', { required: true })
 
     this.git.addRemote('origin', url.toString())
     this.git.addConfig('user.name', GITHUB_ACTOR)
