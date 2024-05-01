@@ -1,0 +1,19 @@
+name: Update Packages
+
+on:
+  schedule:
+    - cron: '25 4 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  update-packages:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - id: config
+      uses: ./actions
+      with:
+        config-file: packages-config.json
+        packages-path: packages

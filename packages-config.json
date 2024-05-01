@@ -1,0 +1,9 @@
+{
+  "$schema": "./packages-config.schema.json",
+  "packages": {
+    "dashlane-cli": {
+      "type": "github",
+      "repo": "Dashlane/dashlane-cli"
+    }
+  }
+}
