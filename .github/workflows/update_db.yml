@@ -1,10 +1,9 @@
-name: Build Archlinux Repository
+name: Update Database
 
 on:
   workflow_run:
     workflows:
       - Rebuild Archlinux Repository
-      - Update Signing Key
       - Add/Remove Packages
     types:
       - completed
