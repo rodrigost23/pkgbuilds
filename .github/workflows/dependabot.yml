@@ -44,7 +44,7 @@ jobs:
         submodules: recursive
     - name: Get current version ${{ needs.variables.outputs.package }}
       continue-on-error: true
-      uses: robinraju/release-downloader@v1.9
+      uses: robinraju/release-downloader@v1.10
       with:
         latest: true
         fileName: ${{ needs.variables.outputs.package }}*
@@ -63,7 +63,7 @@ jobs:
         run: makepkg -sr --sign -C -c --noconfirm --noprogressbar
     - name: Get current repo
       continue-on-error: true
-      uses: robinraju/release-downloader@v1.9
+      uses: robinraju/release-downloader@v1.10
       with:
         latest: true
         fileName: ${{ needs.variables.outputs.repo-name }}.db.tar.gz
@@ -104,7 +104,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Get current packages
-      uses: robinraju/release-downloader@v1.9
+      uses: robinraju/release-downloader@v1.10
       with:
         latest: true
         fileName: '*.pkg.*'
