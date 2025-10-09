@@ -1,0 +1,37 @@
+# Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
+_pkgname=artemisrgb
+pkgname=artemisrgb-bin
+pkgver=1.2025.0819.0
+pkgrel=1
+url="https://artemis-rgb.com/"
+pkgdesc="A universal RGB control software"
+arch=("x86_64")
+provides=("artemisrgb")
+conflicts=("artemisrgb" "artemisrgb-git")
+license=("custom:PolyForm Noncommercial License 1.0.0")
+depends=("dotnet-runtime" "hicolor-icon-theme" "glibc" "bash" "zlib" "fontconfig" "gcc-libs")
+makedepends=("unzip")
+options=("staticlibs")
+source=("${_pkgname}-${pkgver}.zip::https://updating.artemis-rgb.com/api/artifacts/3795832408"
+		"artemis.desktop")
+sha256sums=('424b0abdc63a60709cbc217393c80d1112aa6f97a4b0e6a797c2fd7d59e6a790'
+            '6f99b74311bf7607eb4a1dc7ae0feaa1dedebf54e63fce23d190d052d544982a')
+noextract=("${_pkgname}-${pkgver}.zip")
+
+package() { 
+  unzip -o "${srcdir}/${_pkgname}-${pkgver}.zip" -d "${srcdir}/${_pkgname}-${pkgver}/"
+  
+  mkdir -p "$pkgdir/opt"
+  mkdir -p "$pkgdir/usr/share/"
+  cp -r --preserve=mode,timestamps "${srcdir}/${_pkgname}-${pkgver}/" "$pkgdir/opt/${_pkgname}"
+  mkdir -p "$pkgdir/usr/bin"
+  ln -s "/opt/${_pkgname}/Artemis.UI.Linux" "$pkgdir/usr/bin/${_pkgname}"
+
+  # .desktop
+  install -Dm644 "${srcdir}/artemis.desktop" "${pkgdir}/usr/share/applications/${_pkgname}.desktop"
+
+  # Icon for .desktop
+  cd "${srcdir}/${_pkgname}-${pkgver}/Icons/"
+  find . -type f -exec install -Dm644 "{}" "${pkgdir}/usr/share/icons/hicolor/{}" \;
+
+}
