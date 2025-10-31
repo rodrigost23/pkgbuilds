@@ -1,7 +1,7 @@
 # Maintainer: Rodrigo Tavares
 _pkgname=dashlane-cli
 pkgname=${_pkgname}-bin
-pkgver=v6.2544.0
+pkgver=v6.2544.1
 pkgrel=1
 pkgdesc="Dashlane CLI"
 arch=('x86_64')
