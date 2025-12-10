@@ -1,0 +1,41 @@
+# Maintainer: Rodrigo Tavares
+_pkgname=tuneperfect
+pkgname=${_pkgname}-bin
+pkgver=0.0.85
+pkgrel=1
+pkgdesc="Tune Perfect game"
+arch=('x86_64')
+url="https://github.com/ZerNico/${_pkgname}"
+license=('MIT')
+provides=("${_pkgname}")
+conflicts=("${_pkgname}-git")
+depends=(
+  'alsa-lib'
+  'cairo'
+  'gcc-libs'
+  'gdk-pixbuf2'
+  'glib2'
+  'glibc'
+  'gtk3'
+  'hicolor-icon-theme'
+  'libsoup3'
+  'pango'
+  'webkit2gtk-4.1'
+)
+
+source_x86_64=(
+  "https://github.com/ZerNico/${_pkgname}/releases/download/v${pkgver}/Tune.Perfect_${pkgver}_amd64.deb"
+  "https://raw.githubusercontent.com/ZerNico/${_pkgname}/master/LICENSE"
+)
+sha256sums_x86_64=(
+  'd9a9ec262b3ad28067db650a170247572244f1e8cd9bc1eb41b7c1145999af4a'
+  'SKIP'
+)
+
+OPTIONS=(!strip)
+
+package() {
+  bsdtar -C "${pkgdir}" -xf data.tar.gz
+
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

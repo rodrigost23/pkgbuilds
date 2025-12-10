@@ -4,6 +4,10 @@
     "dashlane-cli": {
       "type": "github",
       "repo": "Dashlane/dashlane-cli"
+    },
+    "tuneperfect": {
+      "type": "github",
+      "repo": "ZerNico/tuneperfect"
     }
   }
 }
