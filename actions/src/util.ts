@@ -104,26 +104,28 @@ export function replaceValue({
   position: Position
   value: string
 }): string {
-  if (position.start.row !== position.end.row) {
-    throw new Error(
-      `Cannot replace a multi-line value.
-      Position: ${JSON.stringify(position)}
-      Value: ${value}
-      Original: ${original}`
-    )
-  }
-
   const lines = original.split('\n')
-  const output: string[] = []
 
-  for (let i = 0; i < lines.length; i++) {
-    if (i === position?.start.row) {
-      const start = lines[i].slice(0, position.start.column)
-      const end = lines[i].slice(position.end.column)
-      output[i] = `${start}${value}${end}`
-    } else {
-      output[i] = lines[i]
-    }
+  const startRow = position.start.row
+  const endRow = position.end.row
+
+  if (startRow === endRow) {
+    const line = lines[startRow]
+    const start = line.slice(0, position.start.column)
+    const end = line.slice(position.end.column)
+    lines[startRow] = `${start}${value}${end}`
+    return lines.join('\n')
   }
-  return output.join('\n')
+
+  const before = lines.slice(0, startRow)
+  const after = lines.slice(endRow + 1)
+
+  const startPrefix = lines[startRow].slice(0, position.start.column)
+  const endSuffix = lines[endRow].slice(position.end.column)
+
+  const replacedLine = `${startPrefix}${value}${endSuffix}`
+
+  const newLines = [...before, replacedLine, ...after]
+
+  return newLines.join('\n')
 }

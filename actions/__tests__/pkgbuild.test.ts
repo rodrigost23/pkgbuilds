@@ -93,5 +93,27 @@ describe('pkgbuild', () => {
         source=("http://url")
       `)
     })
+
+    it('should replace multi-line checksums with a single line', async () => {
+      const input = `
+pkgname=example
+pkgver=1.0
+source=('http://url')
+sha256sums=(
+  'abc123'
+  'def456'
+)
+`
+      const pkgBuild = await PkgBuild.read(input)
+      pkgBuild.checksums = ['newsum1', 'newsum2']
+
+      const expected = `
+pkgname=example
+pkgver=1.0
+source=('http://url')
+sha256sums=('newsum1' 'newsum2')
+`
+      expect(pkgBuild.stringify()).toBe(expected)
+    })
   })
 })
