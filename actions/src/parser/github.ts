@@ -14,5 +14,8 @@ export async function findLatestGitHub(repo: string): Promise<string> {
     repo: repo.split('/')[1]
   })
 
-  return data.tag_name
+  // Some repositories prefix tags with a leading 'v' (e.g. "v1.2.3").
+  // Strip a single leading 'v' so the version can be used directly
+  // in filenames that don't include the prefix.
+  return data.tag_name.replace(/^v/, '')
 }

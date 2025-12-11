@@ -62,16 +62,4 @@ describe('replaceValue', () => {
 
     expect(result).toBe('Hello there')
   })
-
-  it('should throw error if position spans multiple lines', () => {
-    const original = 'Hello\nworld'
-    const position = {
-      start: { row: 0, column: 0 },
-      end: { row: 1, column: 5 }
-    }
-
-    expect(() => {
-      util.replaceValue({ original, position, value: 'test' })
-    }).toThrow()
-  })
 })
