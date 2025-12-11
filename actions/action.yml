@@ -1,5 +1,6 @@
 name: 'Update PKGBUILD'
-description: 'Updates a PKGBUILD sources and checksums when a new version is available'
+description:
+  'Updates a PKGBUILD sources and checksums when a new version is available'
 author: 'Rodrigo Tavares <me@rodrigotavar.es>'
 
 branding:
