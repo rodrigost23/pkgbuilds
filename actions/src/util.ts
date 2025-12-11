@@ -105,7 +105,12 @@ export function replaceValue({
   value: string
 }): string {
   if (position.start.row !== position.end.row) {
-    throw new Error('Cannot replace a multi-line value')
+    throw new Error(
+      `Cannot replace a multi-line value.
+      Position: ${JSON.stringify(position)}
+      Value: ${value}
+      Original: ${original}`
+    )
   }
 
   const lines = original.split('\n')

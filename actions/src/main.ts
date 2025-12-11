@@ -16,24 +16,32 @@ export async function run(): Promise<void> {
   try {
     const configFile = core.getInput('config-file', { required: true })
     const packagesPath = core.getInput('packages-path', { required: true })
+    core.debug(`Config file: ${configFile}`)
+    core.debug(`Packages path: ${packagesPath}`)
 
     const config = await Config.readFile(configFile)
+    core.debug(`Config: ${JSON.stringify(config)}`)
     const pkgbuildFiles = await getPkgbuildFiles(packagesPath)
+    core.debug(`Found PKGBUILD files: ${pkgbuildFiles.join(', ')}`)
 
     const git = new Git(packagesPath, Object.keys(config.packages))
 
     for (const [id, pkg] of Object.entries(config.packages)) {
       core.startGroup(id)
+      core.debug(`Processing package ${id}`)
       const pkgbuildFile = pkgbuildFiles.find(file => file.includes(id))
 
       if (!pkgbuildFile) {
         core.warning(`No PKGBUILD found for package ${id}`)
         continue
       }
+      core.debug(`Found PKGBUILD file: ${pkgbuildFile}`)
 
       if (pkg.type === 'github') {
         let pkgbuild = await PkgBuild.readFile(pkgbuildFile)
+        core.debug(`Original pkgbuild:\n${pkgbuild.stringify()}`)
         pkgbuild.pkgVer = await findLatestGitHub(pkg.repo)
+        core.debug(`Latest version: ${pkgbuild.pkgVer}`)
         pkgbuild = await PkgBuild.read(pkgbuild.stringify())
         pkgbuild.checksums = []
         for (const source of pkgbuild.sources) {
@@ -51,7 +59,9 @@ export async function run(): Promise<void> {
             throw new Error(`Could not calculate checksum for source ${source}`)
           }
         }
+        core.debug(`New checksums: ${pkgbuild.checksums.join(', ')}`)
         fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
+        core.debug(`New pkgbuild:\n${pkgbuild.stringify()}`)
       }
       core.endGroup()
     }
