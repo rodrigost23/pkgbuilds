@@ -40,11 +40,31 @@ export async function run(): Promise<void> {
       if (pkg.type === 'github') {
         let pkgbuild = await PkgBuild.readFile(pkgbuildFile)
         core.debug(`Original pkgbuild:\n${pkgbuild.stringify()}`)
+
+        // Keep original checksums so SKIP entries are respected
+        const originalChecksums = Array.isArray(pkgbuild.checksums)
+          ? [...pkgbuild.checksums]
+          : []
+
         pkgbuild.pkgVer = await findLatestGitHub(pkg.repo)
         core.debug(`Latest version: ${pkgbuild.pkgVer}`)
         pkgbuild = await PkgBuild.read(pkgbuild.stringify())
         pkgbuild.checksums = []
-        for (const source of pkgbuild.sources) {
+
+        for (let i = 0; i < pkgbuild.sources.length; i++) {
+          const source = pkgbuild.sources[i]
+          const origChecksum = originalChecksums[i]
+
+          // If the original checksum is SKIP, keep SKIP and don't download
+          if (
+            typeof origChecksum === 'string' &&
+            origChecksum.trim().toUpperCase() === 'SKIP'
+          ) {
+            core.info(`Skipping checksum for source ${source} (SKIP)`)
+            pkgbuild.checksums.push('SKIP')
+            continue
+          }
+
           core.info(`Downloading source ${source} to calculate checksum`)
           const response = await _fetch(
             source.replace(/(?:.*?::)(https?.*$)/, '$1')
