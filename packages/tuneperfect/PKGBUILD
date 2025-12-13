@@ -27,10 +27,7 @@ source_x86_64=(
   "https://github.com/ZerNico/${_pkgname}/releases/download/v${pkgver}/Tune.Perfect_${pkgver}_amd64.deb"
   "https://raw.githubusercontent.com/ZerNico/${_pkgname}/master/LICENSE"
 )
-sha256sums_x86_64=(
-  'd9a9ec262b3ad28067db650a170247572244f1e8cd9bc1eb41b7c1145999af4a'
-  'SKIP'
-)
+sha256sums_x86_64=('d9a9ec262b3ad28067db650a170247572244f1e8cd9bc1eb41b7c1145999af4a' 'SKIP')
 
 OPTIONS=(!strip)
 
