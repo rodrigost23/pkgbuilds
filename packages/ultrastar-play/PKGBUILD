@@ -1,0 +1,56 @@
+# Maintainer: Rodrigo Tavares
+_pkgname=ultrastar-play
+pkgname=${_pkgname}-bin
+pkgver=1.5.1_beta6
+pkgrel=1
+pkgdesc="UltraStar Play - Sing your favorite songs"
+arch=('x86_64')
+url="https://github.com/UltraStar-Deluxe/Play"
+license=('MIT')
+provides=("${_pkgname}")
+conflicts=("${_pkgname}" "${_pkgname}-git")
+depends=('gtk3' 'nss' 'alsa-lib')
+makedepends=('unzip')
+options=('!strip')
+
+source=("${_pkgname}-${pkgver}.zip::https://github.com/UltraStar-Deluxe/Play/releases/download/v${pkgver//_/-}/StandaloneLinux64-build.zip"
+        "ultrastar-play.desktop")
+sha256sums=('757c174388077d631d2ff5deb6952a45dd81c8a7981bec6d13361b2018695b63'
+            'bf726bd350947edf773db670f2bffce6b54a954c4391553a3d93d2eeb8977b2c')
+
+noextract=("${_pkgname}-${pkgver}.zip")
+
+prepare() {
+  mkdir -p "${srcdir}/${_pkgname}"
+  unzip -q -o "${srcdir}/${_pkgname}-${pkgver}.zip" -d "${srcdir}/${_pkgname}"
+}
+
+package() {
+  cd "${srcdir}/${_pkgname}"
+  
+  install -d -m755 "${pkgdir}/opt/${_pkgname}"
+  cp -r * "${pkgdir}/opt/${_pkgname}/"
+  
+  # Rename executable and data folder
+  mv "${pkgdir}/opt/${_pkgname}/StandaloneLinux64" "${pkgdir}/opt/${_pkgname}/${_pkgname}"
+  mv "${pkgdir}/opt/${_pkgname}/StandaloneLinux64_Data" "${pkgdir}/opt/${_pkgname}/${_pkgname}_Data"
+
+  # Icon
+  install -d -m755 "${pkgdir}/usr/share/pixmaps"
+  install -m644 "${pkgdir}/opt/${_pkgname}/${_pkgname}_Data/StreamingAssets/Themes/particles/logo.png" "${pkgdir}/usr/share/pixmaps/${_pkgname}.png"
+
+  # Desktop
+  install -d -m755 "${pkgdir}/usr/share/applications"
+  install -m644 "${srcdir}/ultrastar-play.desktop" "${pkgdir}/usr/share/applications/${_pkgname}.desktop"
+
+  # Bin
+  install -d -m755 "${pkgdir}/usr/bin"
+  ln -s "/opt/${_pkgname}/${_pkgname}" "${pkgdir}/usr/bin/${_pkgname}"
+  
+  # License
+  install -d -m755 "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -m644 "${pkgdir}/opt/${_pkgname}/${_pkgname}_Data/StreamingAssets/InfoAndLegalTexts/MIT-License.txt" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  
+  # Permissions
+  chmod 755 "${pkgdir}/opt/${_pkgname}/${_pkgname}"
+}

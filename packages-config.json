@@ -8,6 +8,10 @@
     "tuneperfect": {
       "type": "github",
       "repo": "ZerNico/tuneperfect"
+    },
+    "ultrastar-play": {
+      "type": "github",
+      "repo": "UltraStar-Deluxe/Play"
     }
   }
 }

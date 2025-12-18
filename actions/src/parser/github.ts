@@ -17,5 +17,6 @@ export async function findLatestGitHub(repo: string): Promise<string> {
   // Some repositories prefix tags with a leading 'v' (e.g. "v1.2.3").
   // Strip a single leading 'v' so the version can be used directly
   // in filenames that don't include the prefix.
-  return data.tag_name.replace(/^v/, '')
+  // Also replace '-' with '_' to comply with Arch Linux pkgver standards.
+  return data.tag_name.replace(/^v/, '').replace(/-/g, '_')
 }

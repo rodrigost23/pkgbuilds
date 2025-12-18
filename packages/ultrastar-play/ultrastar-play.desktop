@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=UltraStar Play
+Comment=Sing your favorite songs
+Exec=/usr/bin/ultrastar-play
+Icon=ultrastar-play
+Terminal=false
+Type=Application
+Categories=Game;AudioVideo;
