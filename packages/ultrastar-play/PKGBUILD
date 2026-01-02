@@ -15,8 +15,7 @@ options=('!strip')
 
 source=("${_pkgname}-${pkgver}.zip::https://github.com/UltraStar-Deluxe/Play/releases/download/v${pkgver//_/-}/StandaloneLinux64-build.zip"
         "ultrastar-play.desktop")
-sha256sums=('757c174388077d631d2ff5deb6952a45dd81c8a7981bec6d13361b2018695b63'
-            'bf726bd350947edf773db670f2bffce6b54a954c4391553a3d93d2eeb8977b2c')
+sha256sums=('0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5' 'bf726bd350947edf773db670f2bffce6b54a954c4391553a3d93d2eeb8977b2c')
 
 noextract=("${_pkgname}-${pkgver}.zip")
 
