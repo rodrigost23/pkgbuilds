@@ -65,10 +65,16 @@ export async function run(): Promise<void> {
             continue
           }
 
+          // If the source is not a URL, preserve the original checksum
+          const urlMatch = source.match(/(?:.*?::)?(https?:\/\/.*$)/)
+          if (!urlMatch) {
+            core.info(`Preserving original checksum for local source ${source}`)
+            pkgbuild.checksums.push(origChecksum || '')
+            continue
+          }
+
           core.info(`Downloading source ${source} to calculate checksum`)
-          const response = await _fetch(
-            source.replace(/(?:.*?::)(https?.*$)/, '$1')
-          )
+          const response = await _fetch(urlMatch[1])
 
           const data = new Uint8Array(await response.arrayBuffer())
           if (data.length > 0) {
