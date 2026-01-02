@@ -9,14 +9,34 @@ export async function findLatestGitHub(repo: string): Promise<string> {
     request: { fetch: _fetch }
   })
 
-  const { data } = await octokit.rest.repos.getLatestRelease({
-    owner: repo.split('/')[0],
-    repo: repo.split('/')[1]
-  })
+  let releaseData
+
+  try {
+    const { data } = await octokit.rest.repos.getLatestRelease({
+      owner: repo.split('/')[0],
+      repo: repo.split('/')[1]
+    })
+    releaseData = data
+  } catch (error: any) {
+    if (error.status === 404) {
+      const { data } = await octokit.rest.repos.listReleases({
+        owner: repo.split('/')[0],
+        repo: repo.split('/')[1],
+        per_page: 1
+      })
+
+      if (data.length === 0) {
+        throw new Error(`No releases found for repo ${repo}`)
+      }
+      releaseData = data[0]
+    } else {
+      throw error
+    }
+  }
 
   // Some repositories prefix tags with a leading 'v' (e.g. "v1.2.3").
   // Strip a single leading 'v' so the version can be used directly
   // in filenames that don't include the prefix.
   // Also replace '-' with '_' to comply with Arch Linux pkgver standards.
-  return data.tag_name.replace(/^v/, '').replace(/-/g, '_')
+  return releaseData.tag_name.replace(/^v/, '').replace(/-/g, '_')
 }
