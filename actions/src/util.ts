@@ -49,14 +49,32 @@ function expandString(node: SyntaxNode, str: string): string {
           ?.descendantsOfType('variable_assignment')
           ?.find(n => n.firstNamedChild?.text === var_name)?.lastNamedChild ??
         null
-      const value = parseNode(value_node)
+      let value = parseNode(value_node)
       if (!Array.isArray(value)) {
-        str = str.replace(expansion.text, value.toString())
+        value = value.toString()
+        const regexNode = expansion.namedChildren.find(n => n.type === 'regex')
+        if (regexNode) {
+          let regexText = regexNode.text
+          let global = false
+          if (regexText.startsWith('/')) {
+            global = true
+            regexText = regexText.slice(1)
+          }
+          const [pattern, replacement = ''] = regexText.split('/')
+          // Simple string replacement only
+          if (global) {
+            value = value.split(pattern).join(replacement)
+          } else {
+            value = value.replace(pattern, replacement)
+          }
+        }
+        str = str.replace(expansion.text, value)
       }
     }
   }
   return str
 }
+
 
 function parseWord(node: SyntaxNode): string | number {
   const integer = parseInt(node.text)
