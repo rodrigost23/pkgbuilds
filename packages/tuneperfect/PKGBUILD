@@ -1,7 +1,7 @@
 # Maintainer: Rodrigo Tavares
 _pkgname=tuneperfect
 pkgname=${_pkgname}-bin
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 pkgdesc="Tune Perfect game"
 arch=('x86_64')
@@ -27,7 +27,7 @@ source_x86_64=(
   "https://github.com/ZerNico/${_pkgname}/releases/download/v${pkgver}/Tune.Perfect_${pkgver}_amd64.deb"
   "https://raw.githubusercontent.com/ZerNico/${_pkgname}/master/LICENSE"
 )
-sha256sums_x86_64=('36581b3e9fc3cc66b78d05d34a4f84bd8f6a894dd11c3c6374548f82758ca4b0' 'SKIP')
+sha256sums_x86_64=('514c2cebff8e886b3d309d17b6099d1f6fe94041d17d3cf4c48697cf576e2698' 'SKIP')
 
 OPTIONS=(!strip)
 
