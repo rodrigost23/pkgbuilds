@@ -37,7 +37,7 @@ jobs:
         uses: ./.github/actions/load-config
       - name: Get deleted files
         id: deleted-files
-        uses: tj-actions/changed-files@v42
+        uses: tj-actions/changed-files@v44
         with:
           path: packages
           diff_relative: true
@@ -47,7 +47,7 @@ jobs:
         run: echo ${{ steps.deleted-files.outputs.deleted_files }}
       - name: Get added files
         id: added-files
-        uses: tj-actions/changed-files@v42
+        uses: tj-actions/changed-files@v44
         with:
           path: packages
           diff_relative: true
