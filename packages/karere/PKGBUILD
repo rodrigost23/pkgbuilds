@@ -23,6 +23,7 @@ makedepends=(
 	'desktop-file-utils'
 	'appstream-glib'
 	'appstream'
+	'blueprint-compiler'
 )
 optdepends=(
 	'hunspell: spell checking support'
