@@ -12,6 +12,10 @@
     "ultrastar-play": {
       "type": "github",
       "repo": "UltraStar-Deluxe/Play"
+    },
+    "karere": {
+      "type": "github",
+      "repo": "tobagin/karere"
     }
   }
 }
