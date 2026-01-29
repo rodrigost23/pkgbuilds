@@ -76,6 +76,12 @@ export async function run(): Promise<void> {
           core.info(`Downloading source ${source} to calculate checksum`)
           const response = await _fetch(urlMatch[1])
 
+          if (!response.ok) {
+            throw new Error(
+              `Failed to download ${urlMatch[1]}: ${response.statusText}`
+            )
+          }
+
           const data = new Uint8Array(await response.arrayBuffer())
           if (data.length > 0) {
             const checksum = createHash('sha256').update(data).digest('hex')

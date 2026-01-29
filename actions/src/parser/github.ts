@@ -19,16 +19,28 @@ export async function findLatestGitHub(repo: string): Promise<string> {
     releaseData = data
   } catch (error: any) {
     if (error.status === 404) {
-      const { data } = await octokit.rest.repos.listReleases({
+      const { data: releases } = await octokit.rest.repos.listReleases({
         owner: repo.split('/')[0],
         repo: repo.split('/')[1],
         per_page: 1
       })
 
-      if (data.length === 0) {
-        throw new Error(`No releases found for repo ${repo}`)
+      if (releases.length > 0) {
+        releaseData = releases[0]
+      } else {
+        // Fallback to tags if no releases are found
+        const { data: tags } = await octokit.rest.repos.listTags({
+          owner: repo.split('/')[0],
+          repo: repo.split('/')[1],
+          per_page: 1
+        })
+
+        if (tags.length === 0) {
+          throw new Error(`No releases or tags found for repo ${repo}`)
+        }
+        // Construct a minimal releaseData object from the tag
+        releaseData = { tag_name: tags[0].name }
       }
-      releaseData = data[0]
     } else {
       throw error
     }
