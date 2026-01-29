@@ -16,6 +16,10 @@
     "karere": {
       "type": "github",
       "repo": "tobagin/karere"
+    },
+    "karedi": {
+      "type": "github",
+      "repo": "Nianna/Karedi"
     }
   }
 }

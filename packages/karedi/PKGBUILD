@@ -1,0 +1,44 @@
+# Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
+
+pkgname=karedi
+pkgver=1.8.0
+pkgrel=1
+pkgdesc="Multi-platform graphical editor & creator for Ultrastar songs"
+arch=('any')
+url="https://github.com/Nianna/Karedi"
+license=('GPL-3.0-or-later')
+depends=('java-runtime>=17')
+optdepends=(
+    'liberica-jdk-17-full-bin: Recommended runtime with bundled JavaFX'
+    'java-openjfx: Required if using standard OpenJDK'
+)
+source=(
+    "${pkgname}-${pkgver}_amd64-multiplatform.jar::https://github.com/Nianna/Karedi/releases/download/v${pkgver}/Karedi-${pkgver}_amd64-multiplatform.jar"
+    "karedi.sh"
+)
+sha256sums=(
+    '2a8b14fcddd8c7db94fd7d798390f880b8dbd23d10850834c8ababcfd4000637'
+    'SKIP'
+)
+noextract=("${pkgname}-${pkgver}_amd64-multiplatform.jar")
+
+package() {
+    # Install the JAR
+    install -Dm644 "${pkgname}-${pkgver}_amd64-multiplatform.jar" "$pkgdir/usr/share/java/$pkgname/Karedi.jar"
+
+    # Install the wrapper script
+    install -Dm755 "karedi.sh" "$pkgdir/usr/bin/$pkgname"
+    
+    # Create a desktop entry (optional, helpful for menu access)
+    mkdir -p "$pkgdir/usr/share/applications"
+    cat > "$pkgdir/usr/share/applications/$pkgname.desktop" <<EOF
+[Desktop Entry]
+Name=Karedi
+Comment=Ultrastar Song Editor
+Exec=$pkgname
+Icon=java
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Editor;
+EOF
+}
