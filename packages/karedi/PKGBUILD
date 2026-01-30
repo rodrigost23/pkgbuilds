@@ -16,10 +16,7 @@ source=(
     "${pkgname}-${pkgver}_amd64-multiplatform.jar::https://github.com/Nianna/Karedi/releases/download/v${pkgver}/Karedi-${pkgver}_amd64-multiplatform.jar"
     "karedi.sh"
 )
-sha256sums=(
-    '2a8b14fcddd8c7db94fd7d798390f880b8dbd23d10850834c8ababcfd4000637'
-    'SKIP'
-)
+sha256sums=('2a8b14fcddd8c7db94fd7d798390f880b8dbd23d10850834c8ababcfd4000637' 'SKIP')
 noextract=("${pkgname}-${pkgver}_amd64-multiplatform.jar")
 
 package() {
