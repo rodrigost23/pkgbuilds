@@ -2,7 +2,7 @@
 # Contributor: bannert <aur@bannert.dev>
 
 pkgname=karere
-pkgver=2.3.3
+pkgver=2.3.5
 pkgrel=1
 pkgdesc="A fast, native WhatsApp client for Linux with GTK4/LibAdwaita"
 arch=('x86_64')
@@ -30,7 +30,7 @@ optdepends=(
 	'libappindicator-gtk3: system tray support'
 )
 source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('68d9487033c6adf01c91447a40ed77b21a640ca9857f92f4dbb8a3184e56d175')
+sha256sums=('34acb8353b99ccd91f2abe83e9e91170dfcb2ae41936502288920cd0651ab8fe')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
