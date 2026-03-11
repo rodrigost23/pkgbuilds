@@ -96,7 +96,7 @@ jobs:
           Key-Usage: sign
           Name-Real: ${{ needs.variables.outputs.name }}
           Name-Email: ${{ needs.variables.outputs.email }}
-          Expire-Date: 3m
+          Expire-Date: 2y
           %commit
           END
       - name: Export Keys

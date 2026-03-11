@@ -1,10 +1,14 @@
+post_install() {
+	post_upgrade
+}
+
 post_upgrade() {
-	usr/bin/pacman-key -a usr/share/rodrigost23-keyring/public.gpg
-	KEY=$(gpg --show-keys --keyid-format=long usr/share/rodrigost23-keyring/public.gpg | grep 'pub' | awk 'match($2,/[A-Z0-9]{16}/){print substr($2,RSTART,RLENGTH)}')
-	usr/bin/pacman-key --lsign-key ${KEY}
+	/usr/bin/pacman-key -a /usr/share/rodrigost23-keyring/public.gpg
+	KEY=$(gpg --show-keys --keyid-format=long /usr/share/rodrigost23-keyring/public.gpg | grep 'pub' | awk 'match($2,/[A-Z0-9]{16}/){print substr($2,RSTART,RLENGTH)}')
+	/usr/bin/pacman-key --lsign-key ${KEY}
 }
 
 pre_remove() {
-	KEY=$(gpg --show-keys --keyid-format=long usr/share/rodrigost23-keyring/public.gpg | grep 'pub' | awk 'match($2,/[A-Z0-9]{16}/){print substr($2,RSTART,RLENGTH)}')
-	usr/bin/pacman-key -d ${KEY}
+	KEY=$(gpg --show-keys --keyid-format=long /usr/share/rodrigost23-keyring/public.gpg | grep 'pub' | awk 'match($2,/[A-Z0-9]{16}/){print substr($2,RSTART,RLENGTH)}')
+	/usr/bin/pacman-key -d ${KEY}
 }

@@ -77,22 +77,48 @@ jobs:
               echo "::set-output name=${1}::${2}"
             fi
           }
-          set_output keyId "$(gpg --list-secret-keys --keyid-format=long ${{ needs.variables.outputs.email }} | grep 'sec' | awk 'match($0, /[0-9A-Z]{16}/) {print substr($0, RSTART, RLENGTH)}')"
-          expiry=`gpg --list-secret-keys --keyid-format=long ${{ needs.variables.outputs.email }} | grep 'sec' | awk 'match ($6, /[0-9-]{10}/){print substr($6, RSTART, RLENGTH)}'`
-          echo "Key Expires on ${expiry}"
-          dtSec=$(date --date "$expiry" +'%s')    # For "now", use $(date +'%s')
-          taSec=$(date --date "30 days" +'%s')
-          if [ $dtSec -lt $taSec ]; then
-            set_output update true
+          # Get Key ID from the 'sec' record
+          KEYID=$(gpg --list-secret-keys --with-colons ${{ needs.variables.outputs.email }} | grep '^sec' | cut -d: -f5)
+          set_output keyId "$KEYID"
+          
+          # Get Expiration date (seconds since epoch) from the 'sec' record
+          # Field 7 is the expiration date in --with-colons output
+          EXPIRY=$(gpg --list-secret-keys --with-colons ${{ needs.variables.outputs.email }} | grep '^sec' | cut -d: -f7)
+          
+          NOW=$(date +%s)
+          UPDATE=false
+          
+          if [ -z "$EXPIRY" ]; then
+            echo "Key does not expire."
           else
-            set_output update false
+            echo "Key ID: $KEYID"
+            echo "Current time: $(date -d @$NOW)"
+            echo "Key expires on: $(date -d @$EXPIRY)"
+            
+            # Update if expired OR expires within 60 days (5184000 seconds)
+            THRESHOLD=$((NOW + 5184000))
+            if [ "$NOW" -ge "$EXPIRY" ]; then
+              echo "Key is already expired! Triggering update."
+              UPDATE=true
+            elif [ "$EXPIRY" -lt "$THRESHOLD" ]; then
+              echo "Key expires soon (within 60 days). Triggering update."
+              UPDATE=true
+            else
+              echo "Key is valid and not expiring soon."
+            fi
           fi
+          set_output update "$UPDATE"
       - name: Update Expiry
         if: ${{ steps.check.outputs.update == 'true' }}
         run: |
+          # Update primary key and subkeys to expire in 2 years
+          # We use a loop-like approach in gpg edit-key to ensure subkeys are also updated
           gpg --batch --command-fd 0 --edit-key ${{ steps.check.outputs.keyId }} <<-END
           expire
-          3m
+          2y
+          key 1
+          expire
+          2y
           save
           END
       - name: Export Keys
