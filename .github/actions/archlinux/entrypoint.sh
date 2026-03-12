@@ -15,7 +15,7 @@ fi
 
 cd $1
 shift
-sudo -u build --preserve-env=PACKAGER $@
+sudo -u build --preserve-env $@
 
 cd "$od"
 chown -R "$og" .
