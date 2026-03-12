@@ -67,7 +67,7 @@ if [ "$KEY_UPDATED" = "true" ]; then
     gpg --armor --export-secret-key "$KEYID" | \
         openssl aes-256-cbc -a -salt -pbkdf2 -out "$ENC_GPG_PATH" -pass pass:"$ENCRYPTION_KEY"
     
-    gpg --batch --output "$PUB_GPG_PATH" --armor --export "$KEYID"
+    gpg --batch --yes --output "$PUB_GPG_PATH" --armor --export "$KEYID"
     
     git config --local user.email "github-actions[bot]@users.noreply.github.com"
     git config --local user.name "github-actions[bot]"
