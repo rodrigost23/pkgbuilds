@@ -15,7 +15,7 @@ fi
 
 cd $1
 shift
-sudo -u build --preserve-env=PACKAGER,GPGKEY,REPO_NAME,DELETED_PACKAGES "$@"
+sudo -u build --preserve-env=PACKAGER,GPGKEY,REPO_NAME,DELETED_PACKAGES $@
 
 cd "$od"
 chown -R "$og" .
