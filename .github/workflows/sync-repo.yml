@@ -128,13 +128,14 @@ jobs:
           path: artifacts
           pattern: built-packages-*
 
-      - name: Download current database from release
+      - name: Prepare Workspace
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          mkdir -p output
           REPO_NAME=$(jq -r '.repo_name // "rodrigost23"' config.json)
-          gh release download repository -p "${REPO_NAME}.db*" --repo "$GITHUB_REPOSITORY" || echo "No existing DB found."
-          cp artifacts/*/*.pkg.tar.zst* . || true
+          gh release download repository -p "${REPO_NAME}.db*" --repo "$GITHUB_REPOSITORY" -D output || echo "No existing DB found."
+          cp artifacts/*/*.pkg.tar.zst* output/ || true
           chmod +x scripts/update-repo.sh scripts/cleanup-release.sh
 
       - name: Update Database Index
@@ -146,19 +147,21 @@ jobs:
           GPGKEY: ${{ needs.key-management.outputs.key_id }}
           REPO_NAME: ${{ needs.key-management.outputs.repo-name }}
         with:
-          dir: .
-          run: ./scripts/update-repo.sh
+          dir: output
+          run: ../scripts/update-repo.sh
 
       - name: Cleanup old release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./scripts/cleanup-release.sh
+        run: |
+          cd output
+          ../scripts/cleanup-release.sh
 
       - name: Upload updated database and new packages
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: repository
-          file: "*"
+          file: output/*
           file_glob: true
           overwrite: true
