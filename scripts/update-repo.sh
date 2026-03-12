@@ -30,7 +30,25 @@ fi
 NEW_PKGS=$(find . -maxdepth 1 -name "*.pkg.tar.zst" -type f -printf "%f\n" 2>/dev/null || true)
 if [ -n "$NEW_PKGS" ]; then
     # -s: Sign the database
-    # -n: Only add new packages (skip existing)
     # -R: Remove old package entries when adding newer versions
-    repo-add -s --key "$GPGKEY" -q --nocolor -n -R "$DB_FILE" ./*.pkg.tar.zst
+    repo-add -s --key "$GPGKEY" -q --nocolor -R "$DB_FILE" ./*.pkg.tar.zst
+
+    # GitHub Releases do not support symlinks. repo-add creates 'repo.db' as a 
+    # symlink to 'repo.db.tar.gz'. We replace the symlinks with actual copies
+    # to ensure pacman gets a valid file regardless of the extension it requests.
+    for ext in db files; do
+        link="${REPO_NAME}.${ext}"
+        if [ -L "$link" ]; then
+            target=$(readlink "$link")
+            rm "$link"
+            cp "$target" "$link"
+        fi
+        
+        sig_link="${link}.sig"
+        if [ -L "$sig_link" ]; then
+            sig_target=$(readlink "$sig_link")
+            rm "$sig_link"
+            cp "$sig_target" "$sig_link"
+        fi
+    done
 fi
