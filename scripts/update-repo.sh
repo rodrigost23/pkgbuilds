@@ -9,6 +9,12 @@ if [ -z "$REPO_NAME" ]; then
     exit 1
 fi
 
+# We must ensure the signing key is available in the current user's keyring
+if [ -n "$SECRET" ] && [ -f "$GPGKEY" ]; then
+    echo "Importing signing key..."
+    openssl aes-256-cbc -d -a -pbkdf2 -in "$GPGKEY" -pass pass:"$SECRET" | gpg --import
+fi
+
 DB_FILE="${REPO_NAME}.db.tar.gz"
 
 if [ -n "$DELETED_PACKAGES" ] && [ "$DELETED_PACKAGES" != "[]" ]; then
@@ -26,5 +32,5 @@ if [ -n "$NEW_PKGS" ]; then
     # -s: Sign the database
     # -n: Only add new packages (skip existing)
     # -R: Remove old package entries when adding newer versions
-    repo-add -s -q --nocolor -n -R "$DB_FILE" ./*.pkg.tar.zst
+    repo-add -s --key "$GPGKEY" -q --nocolor -n -R "$DB_FILE" ./*.pkg.tar.zst
 fi

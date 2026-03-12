@@ -39,6 +39,7 @@ jobs:
       repo-name: ${{ steps.config.outputs.repo-name }}
       packager: ${{ steps.config.outputs.packager }}
       key_updated: ${{ steps.manage_key.outputs.key_updated }}
+      key_id: ${{ steps.manage_key.outputs.key_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,6 +55,9 @@ jobs:
         run: |
           chmod +x scripts/manage-key.sh
           ./scripts/manage-key.sh
+          # Extract and output the exact Key ID for makepkg to use later
+          KEYID=$(gpg --list-secret-keys --with-colons "${{ steps.config.outputs.email }}" | grep '^sec' | cut -d: -f5)
+          echo "key_id=$KEYID" >> "$GITHUB_OUTPUT"
 
   change-detection:
     runs-on: ubuntu-latest
@@ -95,11 +99,11 @@ jobs:
         env:
           PACKAGER: ${{ needs.key-management.outputs.packager }}
           SECRET: ${{ secrets.ENCRYPTION_KEY }}
-          GPGKEY: ${{ needs.key-management.outputs.enc-gpg }}
-          GPG_EMAIL: ${{ needs.key-management.outputs.email }}
+          GPG_FILE: ${{ needs.key-management.outputs.enc-gpg }}
+          GPGKEY: ${{ needs.key-management.outputs.key_id }}
         with:
           dir: packages/${{ matrix.package }}
-          run: makepkg -sr --sign --key ${{ needs.key-management.outputs.email }} -C -c --noconfirm --noprogressbar
+          run: makepkg -sr --sign -C -c --noconfirm --noprogressbar
 
       - name: Upload Package Artifacts
         uses: actions/upload-artifact@v4
@@ -138,7 +142,8 @@ jobs:
         env:
           DELETED_PACKAGES: ${{ needs.change-detection.outputs.deleted }}
           SECRET: ${{ secrets.ENCRYPTION_KEY }}
-          GPGKEY: ${{ needs.key-management.outputs.enc-gpg }}
+          GPG_FILE: ${{ needs.key-management.outputs.enc-gpg }}
+          GPGKEY: ${{ needs.key-management.outputs.key_id }}
           REPO_NAME: ${{ needs.key-management.outputs.repo-name }}
         with:
           dir: .
