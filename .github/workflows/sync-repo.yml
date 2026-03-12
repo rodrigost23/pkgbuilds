@@ -9,6 +9,7 @@ on:
       - 'config.json'
       - '.github/workflows/sync-repo.yml'
       - 'scripts/**'
+      - '.github/actions/**'
   schedule:
     - cron: '15 1 * * 1'
   workflow_dispatch:
