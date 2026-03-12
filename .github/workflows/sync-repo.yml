@@ -156,6 +156,8 @@ jobs:
         run: |
           cd output
           ../scripts/cleanup-release.sh
+          # Remove backup files created by repo-add before uploading
+          rm -f *.old *.old.sig
 
       - name: Upload updated database and new packages
         uses: svenstaro/upload-release-action@v2
