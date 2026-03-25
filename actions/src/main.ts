@@ -24,7 +24,8 @@ export async function run(): Promise<void> {
     const pkgbuildFiles = await getPkgbuildFiles(packagesPath)
     core.debug(`Found PKGBUILD files: ${pkgbuildFiles.join(', ')}`)
 
-    const git = new Git(packagesPath, Object.keys(config.packages))
+    const packageVersions = new Map<string, string>()
+    const git = new Git(packagesPath, packageVersions)
 
     for (const [id, pkg] of Object.entries(config.packages)) {
       core.startGroup(id)
@@ -48,6 +49,8 @@ export async function run(): Promise<void> {
 
         pkgbuild.pkgVer = await findLatestGitHub(pkg.repo)
         core.debug(`Latest version: ${pkgbuild.pkgVer}`)
+        
+        packageVersions.set(id, pkgbuild.pkgVer)
         pkgbuild = await PkgBuild.read(pkgbuild.stringify())
         pkgbuild.checksums = []
 

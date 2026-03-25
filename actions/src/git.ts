@@ -6,7 +6,7 @@ export class Git {
   git = simpleGit()
   constructor(
     readonly packagesPath: string,
-    readonly packages: string[]
+    readonly packageVersions: Map<string, string>
   ) {
     const {
       GITHUB_WORKSPACE,
@@ -38,8 +38,8 @@ export class Git {
   }
 
   async commit(): Promise<CommitResult> {
-    for (const pkg of this.packages) {
-      const filename = path.join(this.packagesPath, pkg, 'PKGBUILD')
+    for (const [pkgName] of this.packageVersions) {
+      const filename = path.join(this.packagesPath, pkgName, 'PKGBUILD')
       await this.git.add(filename)
     }
 
@@ -47,9 +47,27 @@ export class Git {
       path.basename(path.dirname(f.file))
     )
 
-    const lf = new Intl.ListFormat('en')
+    const commitMessage = this.generateCommitMessage(packages)
 
-    return await this.git.commit(`Update ${lf.format(packages)}`)
+    return await this.git.commit(commitMessage)
+  }
+
+  private generateCommitMessage(packages: string[]): string {
+    const packageVersions: string[] = []
+
+    for (const pkg of packages) {
+      const version = this.packageVersions.get(pkg)
+      if (version) {
+        packageVersions.push(`${pkg} to ${version}`)
+      }
+    }
+
+    if (packageVersions.length === 0) {
+      return 'Update packages'
+    }
+
+    const lf = new Intl.ListFormat('en')
+    return `Update ${lf.format(packageVersions)}`
   }
 
   async push(): Promise<PushResult> {
