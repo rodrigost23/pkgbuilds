@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Jellyfin2Samsung
+Comment=A cross-platform installer for Jellyfin on Samsung Tizen TVs
+Exec=jellyfin2samsung
+Icon=jellyfin2samsung
+Terminal=false
+Type=Application
+Categories=Utility;Network;

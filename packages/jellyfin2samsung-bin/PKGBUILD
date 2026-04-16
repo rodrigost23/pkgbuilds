@@ -1,0 +1,48 @@
+# Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
+_pkgname=jellyfin2samsung
+pkgname=jellyfin2samsung-bin
+pkgver=2.2.0.7
+pkgrel=2
+pkgdesc="One-click installer for Jellyfin on Samsung Tizen TVs (with robust bwrap redirection)"
+arch=('x86_64')
+url="https://github.com/Jellyfin2Samsung/Samsung-Jellyfin-Installer"
+license=('GPL3')
+depends=('dotnet-runtime' 'hicolor-icon-theme' 'glibc' 'zlib' 'fontconfig' 'gcc-libs' 'bubblewrap')
+makedepends=('tar')
+provides=('jellyfin2samsung')
+conflicts=('jellyfin2samsung')
+options=('!strip')
+source=("${pkgname}-${pkgver}.tar.gz::${url}/releases/download/v${pkgver}/Jellyfin2Samsung-v${pkgver}-linux-x64.tar.gz"
+        "jellyfin2samsung.svg::${url}/raw/v${pkgver}/jellyfin-tizen-logo.svg"
+        "jellyfin2samsung.desktop"
+        "jellyfin2samsung.sh")
+sha256sums=('fd1b78686a2977f9ee8fb8d0473047ff15a789bd9031da1b6375264003968107'
+            '294816b81d17d8d7816f868b073a86648fd98012e6faa9c805ab2d00e745d9dc'
+            'd2b8b17b0bf0e15fc635d4b22c3595d76236eb44b8365051aa622f344099943c'
+            '1191f9eff94b3567c917693e40f3625b7ca5a6647a82f98b1165cf517dc7c387')
+noextract=("${pkgname}-${pkgver}.tar.gz")
+
+package() {
+  # Install binaries to a read-only system location
+  mkdir -p "${pkgdir}/usr/lib/${_pkgname}"
+  tar -xzf "${srcdir}/${pkgname}-${pkgver}.tar.gz" -C "${pkgdir}/usr/lib/${_pkgname}/"
+
+  # Ensure executables are runnable
+  chmod +x "${pkgdir}/usr/lib/${_pkgname}/Jellyfin2Samsung"
+  chmod +x "${pkgdir}/usr/lib/${_pkgname}/Assets/esbuild/linux-x64/esbuild"
+
+  # Create placeholders for writable paths (used as bwrap mount points)
+  mkdir -p "${pkgdir}/usr/lib/${_pkgname}/Logs"
+  mkdir -p "${pkgdir}/usr/lib/${_pkgname}/Downloads"
+  mkdir -p "${pkgdir}/usr/lib/${_pkgname}/Assets"
+  touch "${pkgdir}/usr/lib/${_pkgname}/settings.json"
+
+  # Install the wrapper script that uses bubblewrap for redirection
+  install -Dm755 "${srcdir}/${_pkgname}.sh" "${pkgdir}/usr/bin/${_pkgname}"
+
+  # .desktop
+  install -Dm644 "${srcdir}/${_pkgname}.desktop" "${pkgdir}/usr/share/applications/${_pkgname}.desktop"
+
+  # Icon
+  install -Dm644 "${srcdir}/${_pkgname}.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/${_pkgname}.svg"
+}

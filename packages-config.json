@@ -20,6 +20,10 @@
     "karedi": {
       "type": "github",
       "repo": "Nianna/Karedi"
+    },
+    "jellyfin2samsung-bin": {
+      "type": "github",
+      "repo": "Jellyfin2Samsung/Samsung-Jellyfin-Installer"
     }
   }
 }
