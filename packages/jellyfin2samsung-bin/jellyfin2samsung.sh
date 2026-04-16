@@ -28,10 +28,10 @@ for item in "Logs" "Downloads" "Assets" "settings.json"; do
 done
 
 # Configure bubblewrap for GUI and hardware acceleration.
-# We bind the system app dir as read-only and overlay writable user paths.
-# This ensures the app resolves its binary to the expected /usr/lib path.
+# We use --bind / / to allow standard user permissions for file access.
+# Redirections ensure the app's state stays in the user's data directory.
 BWRAP_ARGS=(
-    --ro-bind / /
+    --bind / /
     --dev-bind /dev /dev  # Required for DRI/DRM hardware acceleration
     --proc /proc
     --tmpfs /tmp
