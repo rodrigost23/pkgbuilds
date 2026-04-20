@@ -32,6 +32,13 @@ optdepends=(
 source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
 sha256sums=('777deb6e7fa0620527b9856e8deafb97d6c0c1567e6e75e5a247511a35725302')
 
+prepare() {
+	cd "$srcdir/$pkgname-$pkgver"
+	# Fix empty schema ID crash on native builds by providing the correct fallback.
+	# We target the specific unwrap following the FLATPAK_ID check.
+	sed -i '/FLATPAK_ID/{n;s/\.unwrap_or_default()/.unwrap_or_else(|| "io.github.tobagin.karere".to_string())/}' src/window.rs
+}
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 
