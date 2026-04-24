@@ -1,7 +1,7 @@
 # Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
 _pkgname=jellyfin2samsung
 pkgname=jellyfin2samsung-bin
-pkgver=2.2.0.7
+pkgver=2.2.0.8
 pkgrel=2
 pkgdesc="One-click installer for Jellyfin on Samsung Tizen TVs (with robust bwrap redirection)"
 arch=('x86_64')
@@ -16,7 +16,7 @@ source=("${pkgname}-${pkgver}.tar.gz::${url}/releases/download/v${pkgver}/Jellyf
         "jellyfin2samsung.svg::${url}/raw/v${pkgver}/jellyfin-tizen-logo.svg"
         "jellyfin2samsung.desktop"
         "jellyfin2samsung.sh")
-sha256sums=('fd1b78686a2977f9ee8fb8d0473047ff15a789bd9031da1b6375264003968107' '294816b81d17d8d7816f868b073a86648fd98012e6faa9c805ab2d00e745d9dc' 'd2b8b17b0bf0e15fc635d4b22c3595d76236eb44b8365051aa622f344099943c' 'b4341fc7dc497e80e949fe85ce5dd9625beda354d87ef699c565519fee442029')
+sha256sums=('b6a578a5135726ee1b03ecc3e6b86bfcbd60d07729d77dbaf25216e8d552a189' '294816b81d17d8d7816f868b073a86648fd98012e6faa9c805ab2d00e745d9dc' 'd2b8b17b0bf0e15fc635d4b22c3595d76236eb44b8365051aa622f344099943c' 'b4341fc7dc497e80e949fe85ce5dd9625beda354d87ef699c565519fee442029')
 noextract=("${pkgname}-${pkgver}.tar.gz")
 
 package() {
