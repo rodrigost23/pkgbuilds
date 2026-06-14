@@ -37,9 +37,11 @@ To build AUR packages of your own selection, fork this repository.  The main bra
 
 ## Install signing key
 
-Download [public.gpg](rodrigost23-keyring/public.gpg) and run:
+Run the following commands to download and install the signing key:
 
 ```shell
+curl -sO https://raw.githubusercontent.com/rodrigost23/pkgbuilds/main/packages/rodrigost23-keyring/public.gpg
 pacman-key -a public.gpg
-pacman-key --lsign-key $(gpg --show-keys --keyid-format=long public.gpg | grep 'pub' | awk 'match($2,/[A-Z0-9]{16}/){print substr($2,RSTART,RLENGTH)}')
+pacman-key --lsign-key $(gpg --show-keys --with-colons public.gpg | grep '^pub' | cut -d: -f5)
+rm public.gpg
 ```
