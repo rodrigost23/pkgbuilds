@@ -15,7 +15,8 @@
     },
     "karere": {
       "type": "github",
-      "repo": "tobagin/karere"
+      "repo": "tobagin/karere",
+      "tag_regex": "^v?\\d"
     },
     "karedi": {
       "type": "github",

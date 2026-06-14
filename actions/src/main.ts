@@ -47,7 +47,7 @@ export async function run(): Promise<void> {
           ? [...pkgbuild.checksums]
           : []
 
-        pkgbuild.pkgVer = await findLatestGitHub(pkg.repo)
+        pkgbuild.pkgVer = await findLatestGitHub(pkg.repo, pkg.tag_regex)
         core.debug(`Latest version: ${pkgbuild.pkgVer}`)
         
         packageVersions.set(id, pkgbuild.pkgVer)
