@@ -39,64 +39,71 @@ export async function run(): Promise<void> {
       core.debug(`Found PKGBUILD file: ${pkgbuildFile}`)
 
       if (pkg.type === 'github') {
-        let pkgbuild = await PkgBuild.readFile(pkgbuildFile)
-        core.debug(`Original pkgbuild:\n${pkgbuild.stringify()}`)
+        try {
+          let pkgbuild = await PkgBuild.readFile(pkgbuildFile)
+          core.debug(`Original pkgbuild:\n${pkgbuild.stringify()}`)
 
-        // Keep original checksums so SKIP entries are respected
-        const originalChecksums = Array.isArray(pkgbuild.checksums)
-          ? [...pkgbuild.checksums]
-          : []
+          // Keep original checksums so SKIP entries are respected
+          const originalChecksums = Array.isArray(pkgbuild.checksums)
+            ? [...pkgbuild.checksums]
+            : []
 
-        pkgbuild.pkgVer = await findLatestGitHub(pkg.repo, pkg.tag_regex)
-        core.debug(`Latest version: ${pkgbuild.pkgVer}`)
-        
-        packageVersions.set(id, pkgbuild.pkgVer)
-        pkgbuild = await PkgBuild.read(pkgbuild.stringify())
-        pkgbuild.checksums = []
+          pkgbuild.pkgVer = await findLatestGitHub(pkg.repo, pkg.tag_regex)
+          core.debug(`Latest version: ${pkgbuild.pkgVer}`)
 
-        for (let i = 0; i < pkgbuild.sources.length; i++) {
-          const source = pkgbuild.sources[i]
-          const origChecksum = originalChecksums[i]
+          pkgbuild = await PkgBuild.read(pkgbuild.stringify())
+          pkgbuild.checksums = []
 
-          // If the original checksum is SKIP, keep SKIP and don't download
-          if (
-            typeof origChecksum === 'string' &&
-            origChecksum.trim().toUpperCase() === 'SKIP'
-          ) {
-            core.info(`Skipping checksum for source ${source} (SKIP)`)
-            pkgbuild.checksums.push('SKIP')
-            continue
+          for (let i = 0; i < pkgbuild.sources.length; i++) {
+            const source = pkgbuild.sources[i]
+            const origChecksum = originalChecksums[i]
+
+            // If the original checksum is SKIP, keep SKIP and don't download
+            if (
+              typeof origChecksum === 'string' &&
+              origChecksum.trim().toUpperCase() === 'SKIP'
+            ) {
+              core.info(`Skipping checksum for source ${source} (SKIP)`)
+              pkgbuild.checksums.push('SKIP')
+              continue
+            }
+
+            // If the source is not a URL, preserve the original checksum
+            const urlMatch = source.match(/(?:.*?::)?(https?:\/\/.*$)/)
+            if (!urlMatch) {
+              core.info(`Preserving original checksum for local source ${source}`)
+              pkgbuild.checksums.push(origChecksum || '')
+              continue
+            }
+
+            core.info(`Downloading source ${source} to calculate checksum`)
+            const response = await _fetch(urlMatch[1])
+
+            if (!response.ok) {
+              throw new Error(
+                `Failed to download ${urlMatch[1]}: ${response.statusText}`
+              )
+            }
+
+            const data = new Uint8Array(await response.arrayBuffer())
+            if (data.length > 0) {
+              const checksum = createHash('sha256').update(data).digest('hex')
+              core.info(`Calculated sha256 sum: ${checksum}`)
+              pkgbuild.checksums.push(checksum)
+            } else {
+              throw new Error(`Could not calculate checksum for source ${source}`)
+            }
           }
+          core.debug(`New checksums: ${pkgbuild.checksums.join(', ')}`)
+          fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
+          core.debug(`New pkgbuild:\n${pkgbuild.stringify()}`)
 
-          // If the source is not a URL, preserve the original checksum
-          const urlMatch = source.match(/(?:.*?::)?(https?:\/\/.*$)/)
-          if (!urlMatch) {
-            core.info(`Preserving original checksum for local source ${source}`)
-            pkgbuild.checksums.push(origChecksum || '')
-            continue
-          }
-
-          core.info(`Downloading source ${source} to calculate checksum`)
-          const response = await _fetch(urlMatch[1])
-
-          if (!response.ok) {
-            throw new Error(
-              `Failed to download ${urlMatch[1]}: ${response.statusText}`
-            )
-          }
-
-          const data = new Uint8Array(await response.arrayBuffer())
-          if (data.length > 0) {
-            const checksum = createHash('sha256').update(data).digest('hex')
-            core.info(`Calculated sha256 sum: ${checksum}`)
-            pkgbuild.checksums.push(checksum)
-          } else {
-            throw new Error(`Could not calculate checksum for source ${source}`)
-          }
+          packageVersions.set(id, pkgbuild.pkgVer)
+        } catch (error) {
+          core.error(
+            `Failed to process ${id}: ${error instanceof Error ? error.message : error}`
+          )
         }
-        core.debug(`New checksums: ${pkgbuild.checksums.join(', ')}`)
-        fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
-        core.debug(`New pkgbuild:\n${pkgbuild.stringify()}`)
       }
       core.endGroup()
     }
