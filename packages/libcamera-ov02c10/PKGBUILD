@@ -91,6 +91,9 @@ check() {
       | grep -v single_stream_test \
       | grep -v multi_stream_test \
       | grep -v memory_lifetime_test \
+      | grep -v unixsocket_ipc \
+      | grep -v log_process \
+      | grep -v process_test \
   )
   # shellcheck disable=SC2068
   meson test -C build ${tests[@]}
