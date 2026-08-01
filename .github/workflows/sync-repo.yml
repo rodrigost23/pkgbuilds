@@ -41,7 +41,7 @@ jobs:
       key_updated: ${{ steps.manage_key.outputs.key_updated }}
       key_id: ${{ steps.manage_key.outputs.key_id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 
       
@@ -67,7 +67,7 @@ jobs:
       deleted: ${{ steps.filter.outputs.deleted }}
       run_build: ${{ steps.filter.outputs.run_build }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -90,7 +90,7 @@ jobs:
       matrix:
         package: ${{ fromJson(needs.change-detection.outputs.added_or_modified) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -106,7 +106,7 @@ jobs:
           run: makepkg -sr --sign -C -c --noconfirm --noprogressbar
 
       - name: Upload Package Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: built-packages-${{ matrix.package }}
           path: |
@@ -120,10 +120,10 @@ jobs:
     needs: [key-management, change-detection, build-packages]
     if: always() && (needs.change-detection.outputs.run_build == 'true')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download all built artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           pattern: built-packages-*
