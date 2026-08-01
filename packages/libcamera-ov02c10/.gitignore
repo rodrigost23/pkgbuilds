@@ -1,0 +1,3 @@
+!.gitignore
+!0001-ov02c10-sensor-helper.patch
+!libcamera-fix-python3.14-macro-redefinition.patch
