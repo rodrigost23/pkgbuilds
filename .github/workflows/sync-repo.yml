@@ -127,6 +127,7 @@ jobs:
         with:
           path: artifacts
           pattern: built-packages-*
+          skip-decompress: false
 
       - name: Prepare Workspace
         env:
