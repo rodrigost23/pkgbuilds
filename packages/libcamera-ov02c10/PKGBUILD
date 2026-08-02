@@ -78,7 +78,6 @@ build() {
     -D tracing=disabled
     -D test=true
     -D documentation=disabled
-    -D pycamera=disabled
   )
 
   arch-meson $pkgbase build "${meson_options[@]}"
