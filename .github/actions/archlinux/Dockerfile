@@ -5,6 +5,8 @@ RUN chmod +x entrypoint.sh
 
 RUN pacman-key --init && pacman-key --populate archlinux && pacman -Syuq --noconfirm  --noprogressbar --ignore linux --ignore linux-firmwre --needed base-devel devtools dbus sudo && rm -rf /var/cache/pacman/pkg/* /var/lib/pacman/sync/*
 
+RUN echo "OPTIONS+=(!debug)" >> /etc/makepkg.conf
+
 RUN dbus-uuidgen --ensure=/etc/machine-id && groupadd -f -r wheel && useradd -m -G wheel -s /bin/bash build && (echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel)
 
 ENTRYPOINT ["/entrypoint.sh"]
