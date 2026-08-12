@@ -1,7 +1,7 @@
 # Maintainer: Rodrigo Tavares
 _pkgname=dashlane-cli
 pkgname=${_pkgname}-bin
-pkgver=6.2628.1
+pkgver=6.2633.2
 pkgrel=1
 pkgdesc="Dashlane CLI"
 arch=('x86_64')
@@ -10,7 +10,7 @@ license=('Apache-2.0')
 provides=("${_pkgname}")
 conflicts=("${_pkgname}-git")
 
-sha256sums_x86_64=('983ab643e11fe2d56b166e70fdb59072c0d0315c98083c2b29742a6815e45a93')
+sha256sums_x86_64=('55d9eae31e983081441e7b27ee287fda93989a7bff617bbab9a70aa61b326acc')
 source_x86_64=("dcli::https://github.com/Dashlane/${_pkgname}/releases/download/v${pkgver}/dcli-linux-x64")
 noextract=('dcli')
 
