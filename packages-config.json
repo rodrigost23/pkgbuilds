@@ -26,6 +26,11 @@
     "jellyfin2samsung-bin": {
       "type": "github",
       "repo": "Jellyfin2Samsung/Samsung-Jellyfin-Installer"
+    },
+    "open-dungeon-master-client-bin": {
+      "type": "github",
+      "repo": "Lebbitheplow/open-dungeon-master-client",
+      "tag_regex": "^v\\d+\\.\\d+\\.\\d+$"
     }
   }
 }

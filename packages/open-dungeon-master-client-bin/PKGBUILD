@@ -1,0 +1,51 @@
+# Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
+
+pkgname=open-dungeon-master-client-bin
+pkgver=0.17.0
+pkgrel=1
+pkgdesc="Desktop client for Open Dungeon Master, the self-hostable TTRPG platform"
+arch=('x86_64')
+url="https://opendungeonmaster.com"
+license=('MIT')
+depends=(
+	'at-spi2-core'
+	'gtk3'
+	'libnotify'
+	'libsecret'
+	'libxss'
+	'libxtst'
+	'nss'
+	'util-linux-libs'
+	'xdg-utils'
+)
+optdepends=('libappindicator-gtk3: system tray icon support')
+provides=('open-dungeon-master-client')
+options=('!strip')
+source=("open-dungeon-master-client-${pkgver}-x64.tar.gz::https://github.com/Lebbitheplow/open-dungeon-master-client/releases/download/v${pkgver}/open-dungeon-master-client-${pkgver}-x64.tar.gz")
+sha256sums=('8f979d7f5307ac1ffe0e254a0dcca9d06e3b6b7c4c711cc085e81f4111f5f62e')
+
+package() {
+	cd "$srcdir/open-dungeon-master-client-${pkgver}-x64"
+	install -dm755 "$pkgdir/opt/open-dungeon-master"
+	cp -a . "$pkgdir/opt/open-dungeon-master/"
+
+	install -Dm644 resources/icon.png \
+		"$pkgdir/usr/share/icons/hicolor/1024x1024/apps/open-dungeon-master-client.png"
+
+	install -dm755 "$pkgdir/usr/bin"
+	ln -s /opt/open-dungeon-master/open-dungeon-master-client \
+		"$pkgdir/usr/bin/open-dungeon-master-client"
+
+	install -Dm644 /dev/stdin \
+		"$pkgdir/usr/share/applications/open-dungeon-master-client.desktop" <<'EOF'
+[Desktop Entry]
+Name=Open Dungeon Master
+Comment=Multiplayer TTRPG campaigns with an AI or human Dungeon Master
+Exec=/opt/open-dungeon-master/open-dungeon-master-client %u
+Icon=open-dungeon-master-client
+Terminal=false
+Type=Application
+Categories=Game;
+MimeType=x-scheme-handler/odm;
+EOF
+}
