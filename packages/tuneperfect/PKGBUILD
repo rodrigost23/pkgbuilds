@@ -29,10 +29,11 @@ source_x86_64=(
 )
 sha256sums_x86_64=('e8752d7215079e6cc43e5b6649861964f6a8cb95fd29f81a5009277a81707873' 'SKIP')
 
-OPTIONS=(!strip)
+options=(!strip)
 
 package() {
-  bsdtar -C "${pkgdir}" -xf data.tar.gz
+  # The .deb's data member is data.tar.xz (not .gz), so match whatever it is.
+  bsdtar -C "${pkgdir}" -xf data.tar.*
 
   install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
