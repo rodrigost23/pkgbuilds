@@ -12,6 +12,19 @@ describe('PkgConfig', () => {
       })
     })
 
+    it('should carry tag_regex and use_tags through', () => {
+      const input =
+        '{"type": "github", "repo": "owner/repo", "tag_regex": "^v", "use_tags": true}'
+      const result = PackageConfig.read(input)
+
+      expect(result).toEqual({
+        type: 'github',
+        repo: 'owner/repo',
+        tag_regex: '^v',
+        use_tags: true
+      })
+    })
+
     it('should throw error for invalid type', () => {
       const input = '{"type": "invalid", "repo": "owner/repo"}'
 
@@ -56,9 +69,29 @@ describe('PkgConfig', () => {
       ).toBe(false)
     })
 
+    it('should return false for non-boolean use_tags', () => {
+      expect(
+        PackageConfig['isValidConfig']({
+          type: 'github',
+          repo: 'user/repo',
+          use_tags: 'yes'
+        })
+      ).toBe(false)
+    })
+
     it('should return true for valid config', () => {
       expect(
         PackageConfig['isValidConfig']({ type: 'github', repo: 'user/repo' })
+      ).toBe(true)
+    })
+
+    it('should return true for valid config with use_tags', () => {
+      expect(
+        PackageConfig['isValidConfig']({
+          type: 'github',
+          repo: 'user/repo',
+          use_tags: true
+        })
       ).toBe(true)
     })
   })

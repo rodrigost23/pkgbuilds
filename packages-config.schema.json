@@ -26,6 +26,10 @@
                 "tag_regex": {
                   "type": "string",
                   "description": "Optional regex pattern to filter tags when checking for new releases"
+                },
+                "use_tags": {
+                  "type": "boolean",
+                  "description": "Also consider matching git tags, not just releases; picks the highest version"
                 }
               }
             }

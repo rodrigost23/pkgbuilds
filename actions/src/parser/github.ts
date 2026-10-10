@@ -1,11 +1,13 @@
 import { Octokit } from 'octokit'
+import { compareVersions } from '../version'
 
 // Saving fetch on another variable because bash-language-server deletes it from global
 const _fetch = fetch
 
 export async function findLatestGitHub(
   repo: string,
-  tagRegex?: string
+  tagRegex?: string,
+  useTags?: boolean
 ): Promise<string> {
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
@@ -25,7 +27,9 @@ export async function findLatestGitHub(
 
     if (tagRegex) {
       const regex = new RegExp(tagRegex)
-      validRelease = releases.find((r: any) => regex.test(r.tag_name) && !r.draft && !r.prerelease)
+      validRelease = releases.find(
+        (r: any) => regex.test(r.tag_name) && !r.draft && !r.prerelease
+      )
     } else {
       // Fallback: try to fetch latest release directly if no regex is provided
       try {
@@ -36,9 +40,9 @@ export async function findLatestGitHub(
         validRelease = data
       } catch (err: any) {
         if (err.status === 404) {
-           validRelease = releases.find((r: any) => !r.draft && !r.prerelease)
+          validRelease = releases.find((r: any) => !r.draft && !r.prerelease)
         } else {
-           throw err
+          throw err
         }
       }
     }
@@ -62,7 +66,9 @@ export async function findLatestGitHub(
       }
 
       if (!validTag) {
-        throw new Error(`No releases or tags found for repo ${repo} matching criteria`)
+        throw new Error(
+          `No releases or tags found for repo ${repo} matching criteria`
+        )
       }
       releaseData = { tag_name: validTag.name }
     }
@@ -70,9 +76,31 @@ export async function findLatestGitHub(
     throw error
   }
 
+  let tagName: string = releaseData.tag_name
+
+  // Some repositories only publish tags (no GitHub release) for their newer
+  // versions. When opted in via `use_tags`, consider both and keep the highest.
+  if (useTags) {
+    const { data: tags } = await octokit.rest.repos.listTags({
+      owner: repo.split('/')[0],
+      repo: repo.split('/')[1],
+      per_page: 100
+    })
+    const regex = tagRegex ? new RegExp(tagRegex) : undefined
+
+    for (const tag of tags) {
+      if (regex && !regex.test(tag.name)) {
+        continue
+      }
+      if (compareVersions(tag.name, tagName) > 0) {
+        tagName = tag.name
+      }
+    }
+  }
+
   // Some repositories prefix tags with a leading 'v' (e.g. "v1.2.3").
   // Strip a single leading 'v' so the version can be used directly
   // in filenames that don't include the prefix.
   // Also replace '-' with '_' to comply with Arch Linux pkgver standards.
-  return releaseData.tag_name.replace(/^v/, '').replace(/-/g, '_')
+  return tagName.replace(/^v/, '').replace(/-/g, '_')
 }

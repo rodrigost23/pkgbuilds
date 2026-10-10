@@ -48,7 +48,11 @@ export async function run(): Promise<void> {
             ? [...pkgbuild.checksums]
             : []
 
-          pkgbuild.pkgVer = await findLatestGitHub(pkg.repo, pkg.tag_regex)
+          pkgbuild.pkgVer = await findLatestGitHub(
+            pkg.repo,
+            pkg.tag_regex,
+            pkg.use_tags
+          )
           core.debug(`Latest version: ${pkgbuild.pkgVer}`)
 
           pkgbuild = await PkgBuild.read(pkgbuild.stringify())
@@ -71,7 +75,9 @@ export async function run(): Promise<void> {
             // If the source is not a URL, preserve the original checksum
             const urlMatch = source.match(/(?:.*?::)?(https?:\/\/.*$)/)
             if (!urlMatch) {
-              core.info(`Preserving original checksum for local source ${source}`)
+              core.info(
+                `Preserving original checksum for local source ${source}`
+              )
               pkgbuild.checksums.push(origChecksum || '')
               continue
             }
@@ -91,7 +97,9 @@ export async function run(): Promise<void> {
               core.info(`Calculated sha256 sum: ${checksum}`)
               pkgbuild.checksums.push(checksum)
             } else {
-              throw new Error(`Could not calculate checksum for source ${source}`)
+              throw new Error(
+                `Could not calculate checksum for source ${source}`
+              )
             }
           }
           core.debug(`New checksums: ${pkgbuild.checksums.join(', ')}`)

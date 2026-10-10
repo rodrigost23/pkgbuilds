@@ -7,6 +7,7 @@ export interface GitHubPkg {
   type: typeof githubType
   repo: string
   tag_regex?: string
+  use_tags?: boolean
 }
 
 export type IPackageConfig = GitHubPkg
@@ -15,7 +16,8 @@ export class PackageConfig implements IPackageConfig {
   private constructor(
     readonly type: PkgType,
     readonly repo: string,
-    readonly tag_regex?: string
+    readonly tag_regex?: string,
+    readonly use_tags?: boolean
   ) {}
 
   /**
@@ -29,7 +31,11 @@ export class PackageConfig implements IPackageConfig {
       return false
     }
 
-    return obj?.type === githubType && typeof obj?.repo === 'string'
+    return (
+      obj?.type === githubType &&
+      typeof obj?.repo === 'string' &&
+      (obj?.use_tags === undefined || typeof obj?.use_tags === 'boolean')
+    )
   }
 
   /**
@@ -41,7 +47,12 @@ export class PackageConfig implements IPackageConfig {
   static read(input: string): PackageConfig {
     const config = JSON.parse(input)
     if (this.isValidConfig(config)) {
-      return new PackageConfig(config.type, config.repo, config.tag_regex)
+      return new PackageConfig(
+        config.type,
+        config.repo,
+        config.tag_regex,
+        config.use_tags
+      )
     }
 
     throw new Error('Invalid config')
