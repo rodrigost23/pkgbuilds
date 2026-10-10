@@ -19,6 +19,10 @@ inputs:
     description: The path to the packages directory
     required: true
 
+outputs:
+  changes:
+    description: 'true when at least one PKGBUILD was updated and pushed'
+
 runs:
   using: node24
   main: dist/index.js

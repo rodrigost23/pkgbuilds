@@ -118,7 +118,10 @@ export async function run(): Promise<void> {
 
     core.info('Creating commit...')
     const commit = await git.commit()
-    if (commit.commit.trim().length > 0) {
+    const changed = commit.commit.trim().length > 0
+    core.setOutput('changes', changed ? 'true' : 'false')
+
+    if (changed) {
       core.info(`Pushing commit ${commit.commit}...`)
       await git.push()
     } else {
