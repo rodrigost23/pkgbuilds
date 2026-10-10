@@ -1,0 +1,4 @@
+!.gitignore
+!libnma-gtk4.vapi
+!NMA4-1.0.h
+!libnma-gtk4-vapi.patch

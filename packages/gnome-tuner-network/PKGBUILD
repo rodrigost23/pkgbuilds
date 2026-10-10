@@ -1,0 +1,59 @@
+# Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
+
+pkgname=gnome-tuner-network
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Network, Wi-Fi and VPN settings page plugin for Tuner"
+arch=('x86_64')
+url="https://gitlab.eterfund.ru/ximperlinux/tuner-network"
+license=('GPL-3.0-or-later')
+depends=(
+	'gsettings-desktop-schemas'
+	'gnome-tuner'
+	'libadwaita'
+	'libgee'
+	'libnm'
+	'libnma-gtk4'
+	'libsecret'
+	'networkmanager'
+)
+makedepends=(
+	'blueprint-compiler'
+	'meson'
+	'vala'
+)
+_archive=tuner-network
+_tag="${pkgver}-alt1"
+source=(
+	"${_archive}-${_tag}.tar.gz::${url}/-/archive/${_tag}/${_archive}-${_tag}.tar.gz"
+	'libnma-gtk4.vapi'
+	'NMA4-1.0.h'
+	'libnma-gtk4-vapi.patch'
+)
+sha256sums=(
+	'18ad9bbfec3c61e4d98495e959c46ae5972c5f1ad80dc0ae76f7202a94ac017a'
+	'6e54c6ed8ccc3bb8f462c0e165f2badb9cd9f84c2cda74d580690ebaffca3822'
+	'af3dc5702fcb8ebe282ac1495616f3b407a9f807ae6370246b319aae91bc974e'
+	'8860671efcec10244deb754bad081b47c0dc98e35546e48a5cc96ccbabad04a5'
+)
+
+prepare() {
+	cd "${_archive}-${_tag}"
+
+	# Arch's libnma-gtk4 1.10.6 ships a broken Vala binding: its g-ir-scanner
+	# run drops the NMA.Ws* security widgets and NMABarCodeWidget's constructor
+	# because the upstream headers are missing #includes (fixed upstream after
+	# the 1.10.6 release, commit 68cc8576). Ship a corrected binding and use it.
+	install -Dm644 "$srcdir/libnma-gtk4.vapi" vapi/libnma-gtk4.vapi
+	install -Dm644 "$srcdir/NMA4-1.0.h" NMA4-1.0.h
+	patch -Np1 -i "$srcdir/libnma-gtk4-vapi.patch"
+}
+
+build() {
+	arch-meson "${_archive}-${_tag}" build
+	meson compile -C build
+}
+
+package() {
+	meson install -C build --destdir "$pkgdir"
+}
