@@ -2,7 +2,7 @@
 # Contributor: bannert <aur@bannert.dev>
 
 pkgname=karere
-pkgver=4.2.5
+pkgver=4.3.4
 pkgrel=3
 pkgdesc="A fast, native WhatsApp client for Linux with GTK4/LibAdwaita"
 arch=('x86_64')
@@ -57,10 +57,7 @@ source=(
 	"${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"
 	"${_cefdir}.zip::${url}/releases/download/cef-150.0.10-proprietary-codecs/${_cefdir}.zip"
 )
-sha256sums=(
-	'29caf406780ba1450a68166b2bd3f653045f7510841f662d2e66fa475932e24d'
-	'3bbe298368c4d87c19ad9b7ed4e8449ea91b32ffa3cefc8672791a1b96c9c3b9'
-)
+sha256sums=('75e306113bc2981d802da836a644c7970d78a2492cf4a31f08891da1f42d5e80' '3bbe298368c4d87c19ad9b7ed4e8449ea91b32ffa3cefc8672791a1b96c9c3b9')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
