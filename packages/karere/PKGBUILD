@@ -3,7 +3,7 @@
 
 pkgname=karere
 pkgver=4.3.4
-pkgrel=3
+pkgrel=4
 pkgdesc="A fast, native WhatsApp client for Linux with GTK4/LibAdwaita"
 arch=('x86_64')
 url="https://github.com/tobagin/karere"
@@ -52,12 +52,12 @@ optdepends=(
 # CEF runtime asset published by karere. Kept as a flat (non-nested) variable so
 # the PKGBUILD update action can expand it; keep in sync with the
 # cef-*-proprietary-codecs release tag used in `source` below.
-_cefdir='cef_binary_150.0.10+g8042e43+chromium-150.0.7871.101_linux64_minimal'
+_cefdir='cef_binary_152.0.6+g708dc14+chromium-152.0.7977.83_linux64_minimal'
 source=(
 	"${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"
-	"${_cefdir}.zip::${url}/releases/download/cef-150.0.10-proprietary-codecs/${_cefdir}.zip"
+	"${_cefdir}.zip::${url}/releases/download/cef-152.0.6-proprietary-codecs/${_cefdir}.zip"
 )
-sha256sums=('75e306113bc2981d802da836a644c7970d78a2492cf4a31f08891da1f42d5e80' '3bbe298368c4d87c19ad9b7ed4e8449ea91b32ffa3cefc8672791a1b96c9c3b9')
+sha256sums=('75e306113bc2981d802da836a644c7970d78a2492cf4a31f08891da1f42d5e80' '3d64f6fac8911a368ffa415e3ee53d002cbd792866f08ed6578dae1e252cbac8')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
