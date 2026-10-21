@@ -115,5 +115,60 @@ sha256sums=('newsum1' 'newsum2')
 `
       expect(pkgBuild.stringify()).toBe(expected)
     })
+
+    it('should rewrite named variables keeping their quotes', async () => {
+      const pkgBuild = await PkgBuild.read(`
+pkgver=1.0
+pkgrel=3
+_dir='cef_1'
+_ver="1"
+source=("http://url/\${_dir}")
+sha256sums=(
+  'abc123'
+)
+`)
+
+      expect(pkgBuild.getVariable('_dir')).toBe('cef_1')
+      pkgBuild.pkgVer = '2.0'
+      pkgBuild.checksums = ['def456']
+      pkgBuild.setVariable('pkgrel', '1')
+      pkgBuild.setVariable('_dir', 'cef_2')
+      pkgBuild.setVariable('_ver', '2')
+
+      expect(pkgBuild.stringify()).toBe(`
+pkgver=2.0
+pkgrel=1
+_dir='cef_2'
+_ver="2"
+source=("http://url/\${_dir}")
+sha256sums=('def456')
+`)
+    })
+
+    it('should expand rewritten variables in sources after re-reading', async () => {
+      const pkgBuild = await PkgBuild.read(`
+pkgver=1.0
+_dir='cef_1'
+source=("http://url/\${_dir}.zip")
+sha256sums=('abc123')
+`)
+      pkgBuild.setVariable('_dir', 'cef_2')
+
+      const reread = await PkgBuild.read(pkgBuild.stringify())
+      expect(reread.sources).toEqual(['http://url/cef_2.zip'])
+    })
+
+    it('should ignore assignments inside functions', async () => {
+      const pkgBuild = await PkgBuild.read(`
+pkgver=1.0
+source=('a')
+sha256sums=('abc123')
+build() {
+  export PYTHON='x'
+}
+`)
+      expect(pkgBuild.getVariable('PYTHON')).toBeUndefined()
+      expect(() => pkgBuild.setVariable('PYTHON', 'y')).toThrow()
+    })
   })
 })

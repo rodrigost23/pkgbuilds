@@ -30,6 +30,50 @@
                 "use_tags": {
                   "type": "boolean",
                   "description": "Also consider matching git tags, not just releases; picks the highest version"
+                },
+                "vars": {
+                  "type": "object",
+                  "description": "PKGBUILD variables derived from the upstream repository at the new version. Resolved in order; strings can use {pkgver}, {tag} and earlier variables as {name}",
+                  "additionalProperties": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["type", "file", "regex"],
+                        "properties": {
+                          "type": { "enum": ["upstream_file"] },
+                          "file": {
+                            "type": "string",
+                            "description": "File in the upstream repository, read at the new version's tag"
+                          },
+                          "regex": {
+                            "type": "string",
+                            "description": "Regex whose first capture group is the value"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["type", "tag", "asset_regex"],
+                        "properties": {
+                          "type": { "enum": ["release_asset"] },
+                          "tag": {
+                            "type": "string",
+                            "description": "Tag of the upstream release holding the asset"
+                          },
+                          "asset_regex": {
+                            "type": "string",
+                            "description": "Regex that must match exactly one asset name"
+                          },
+                          "strip": {
+                            "type": "string",
+                            "description": "Suffix to remove from the asset name"
+                          }
+                        }
+                      }
+                    ]
+                  }
                 }
               }
             }
