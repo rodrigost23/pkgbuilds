@@ -8,19 +8,34 @@ interface Positions {
   pkgVer: Position
 }
 
+interface Variable {
+  value: string
+  position: Position
+  /** Quote character to keep when the value is rewritten ('' for bare words) */
+  quote: '' | "'" | '"'
+}
+
 export class PkgBuild {
+  private readonly originalVariables: Map<string, string>
+
   private constructor(
     private readonly original: string,
     public pkgVer: string,
     public checksums: string[],
     readonly sources: string[],
-    private readonly positions: Positions
-  ) {}
+    private readonly positions: Positions,
+    private readonly variables: Map<string, Variable> = new Map()
+  ) {
+    this.originalVariables = new Map(
+      [...variables].map(([name, variable]) => [name, variable.value])
+    )
+  }
 
   static async read(input: string): Promise<PkgBuild> {
     const tree = (await util.getParser()).parse(input)
     const sources: string[] = []
     const checksums: string[] = []
+    const variables = new Map<string, Variable>()
     let checksumsPosition: Position | undefined
     let pkgVerPosition: Position | undefined
     let pkgVer: string | undefined
@@ -50,6 +65,24 @@ export class PkgBuild {
           end: rhs.endPosition
         }
       }
+
+      // Track top-level scalar assignments so they can be rewritten by name
+      // (e.g. `pkgrel`, or helper variables used inside `source`)
+      if (
+        lhs &&
+        rhs &&
+        node.parent?.type === 'program' &&
+        !variables.has(lhs.text) &&
+        ['word', 'string', 'raw_string'].includes(rhs.type)
+      ) {
+        const quote =
+          rhs.type === 'raw_string' ? "'" : rhs.type === 'string' ? '"' : ''
+        variables.set(lhs.text, {
+          value: String(util.parseNode(rhs)),
+          position: { start: rhs.startPosition, end: rhs.endPosition },
+          quote
+        })
+      }
     }
 
     if (!pkgVer || !pkgVerPosition) {
@@ -67,26 +100,62 @@ export class PkgBuild {
       pkgVer: pkgVerPosition
     }
 
-    return new PkgBuild(input, pkgVer, checksums, sources, positions)
+    return new PkgBuild(input, pkgVer, checksums, sources, positions, variables)
   }
 
   static async readFile(path: PathLike): Promise<PkgBuild> {
     return PkgBuild.read(await readFile(path, 'utf-8'))
   }
 
+  /** Gets the value of a top-level scalar variable, if it exists. */
+  getVariable(name: string): string | undefined {
+    return this.variables.get(name)?.value
+  }
+
+  /**
+   * Sets the value of an existing top-level scalar variable, keeping its
+   * quoting style. Applied on {@link stringify}.
+   *
+   * @throws {Error} If the variable is not assigned in the PKGBUILD
+   */
+  setVariable(name: string, value: string): void {
+    const variable = this.variables.get(name)
+    if (!variable) {
+      throw new Error(`Variable ${name} not found in PKGBUILD`)
+    }
+    variable.value = value
+  }
+
   stringify(): string {
-    let result = util.replaceValue({
-      original: this.original,
-      position: this.positions.pkgVer,
-      value: this.pkgVer
-    })
+    const replacements: { position: Position; value: string }[] = [
+      { position: this.positions.pkgVer, value: this.pkgVer },
+      {
+        position: this.positions.checksums,
+        value: `('${this.checksums.join("' '")}')`
+      }
+    ]
 
-    result = util.replaceValue({
-      original: result,
-      position: this.positions.checksums,
-      value: `('${this.checksums.join("' '")}')`
-    })
+    for (const [name, variable] of this.variables) {
+      if (variable.value !== this.originalVariables.get(name)) {
+        replacements.push({
+          position: variable.position,
+          value: `${variable.quote}${variable.value}${variable.quote}`
+        })
+      }
+    }
 
+    // Apply from the bottom up so a replacement that changes the number of
+    // lines (e.g. multi-line checksums) doesn't shift later positions
+    replacements.sort(
+      (a, b) =>
+        b.position.start.row - a.position.start.row ||
+        b.position.start.column - a.position.start.column
+    )
+
+    let result = this.original
+    for (const { position, value } of replacements) {
+      result = util.replaceValue({ original: result, position, value })
+    }
     return result
   }
 }

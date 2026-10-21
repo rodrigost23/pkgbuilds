@@ -25,6 +25,30 @@ describe('PkgConfig', () => {
       })
     })
 
+    it('should carry vars through and validate resolvers', () => {
+      const vars = {
+        a: { type: 'upstream_file', file: 'f', regex: '(x)' },
+        b: { type: 'release_asset', tag: 't', asset_regex: 'r', strip: '.zip' }
+      }
+      const result = PackageConfig.read(
+        JSON.stringify({ type: 'github', repo: 'owner/repo', vars })
+      )
+      expect(result.vars).toEqual(vars)
+
+      for (const bad of [
+        { a: { type: 'upstream_file', file: 'f' } },
+        { a: { type: 'release_asset', tag: 't', asset_regex: 1 } },
+        { a: { type: 'unknown' } },
+        'nope'
+      ]) {
+        expect(() =>
+          PackageConfig.read(
+            JSON.stringify({ type: 'github', repo: 'owner/repo', vars: bad })
+          )
+        ).toThrow()
+      }
+    })
+
     it('should throw error for invalid type', () => {
       const input = '{"type": "invalid", "repo": "owner/repo"}'
 

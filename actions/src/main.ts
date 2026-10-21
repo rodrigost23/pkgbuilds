@@ -4,7 +4,8 @@ import * as fs from 'fs'
 import { Git } from './git'
 import { Config } from './model/config'
 import { PkgBuild } from './model/pkgbuild'
-import { findLatestGitHub } from './parser/github'
+import { findLatestGitHubTag, tagToVersion } from './parser/github'
+import { resolveVars } from './parser/vars'
 
 const _fetch = fetch
 
@@ -48,12 +49,36 @@ export async function run(): Promise<void> {
             ? [...pkgbuild.checksums]
             : []
 
-          pkgbuild.pkgVer = await findLatestGitHub(
+          const previousVer = pkgbuild.pkgVer.replace(/^(['"])(.*)\1$/, '$2')
+          const tag = await findLatestGitHubTag(
             pkg.repo,
             pkg.tag_regex,
             pkg.use_tags
           )
+          pkgbuild.pkgVer = tagToVersion(tag)
           core.debug(`Latest version: ${pkgbuild.pkgVer}`)
+
+          // Variables derived from the upstream repository at the new version
+          if (pkg.vars) {
+            const resolved = await resolveVars(
+              pkg.repo,
+              tag,
+              pkgbuild.pkgVer,
+              pkg.vars
+            )
+            for (const [name, value] of Object.entries(resolved)) {
+              core.info(`Resolved ${name}=${value}`)
+              pkgbuild.setVariable(name, value)
+            }
+          }
+
+          // A new upstream version starts a new package release
+          if (
+            pkgbuild.pkgVer !== previousVer &&
+            pkgbuild.getVariable('pkgrel') !== undefined
+          ) {
+            pkgbuild.setVariable('pkgrel', '1')
+          }
 
           pkgbuild = await PkgBuild.read(pkgbuild.stringify())
           pkgbuild.checksums = []

@@ -49,13 +49,15 @@ optdepends=(
 	'hunspell: spell checking support'
 	'libappindicator-gtk3: system tray support'
 )
-# CEF runtime asset published by karere. Kept as a flat (non-nested) variable so
-# the PKGBUILD update action can expand it; keep in sync with the
-# cef-*-proprietary-codecs release tag used in `source` below.
+# CEF runtime asset published by karere. Kept as flat (non-nested) variables so
+# the PKGBUILD update action can expand and rewrite them: _cefver is read from
+# karere's Cargo.lock and _cefdir from the matching release asset (see "vars"
+# in packages-config.json).
+_cefver='152.0.6'
 _cefdir='cef_binary_152.0.6+g708dc14+chromium-152.0.7977.83_linux64_minimal'
 source=(
 	"${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"
-	"${_cefdir}.zip::${url}/releases/download/cef-152.0.6-proprietary-codecs/${_cefdir}.zip"
+	"${_cefdir}.zip::${url}/releases/download/cef-${_cefver}-proprietary-codecs/${_cefdir}.zip"
 )
 sha256sums=('75e306113bc2981d802da836a644c7970d78a2492cf4a31f08891da1f42d5e80' '3d64f6fac8911a368ffa415e3ee53d002cbd792866f08ed6578dae1e252cbac8')
 

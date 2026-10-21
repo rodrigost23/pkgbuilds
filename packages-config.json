@@ -17,7 +17,20 @@
       "type": "github",
       "repo": "tobagin/karere",
       "tag_regex": "^v\\d+\\.\\d+\\.\\d+$",
-      "use_tags": true
+      "use_tags": true,
+      "vars": {
+        "_cefver": {
+          "type": "upstream_file",
+          "file": "Cargo.lock",
+          "regex": "name = \"cef\"\\nversion = \"[^+\"]+\\+([0-9.]+)\""
+        },
+        "_cefdir": {
+          "type": "release_asset",
+          "tag": "cef-{_cefver}-proprietary-codecs",
+          "asset_regex": "^cef_binary_{_cefver}\\+.*_linux64_minimal\\.zip$",
+          "strip": ".zip"
+        }
+      }
     },
     "karedi": {
       "type": "github",
