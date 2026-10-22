@@ -15,8 +15,28 @@ export function tagToVersion(tagName: string): string {
   return tagName.replace(/^v/, '').replace(/-/g, '_')
 }
 
+type Release = Awaited<
+  ReturnType<Octokit['rest']['repos']['listReleases']>
+>['data'][number]
+
+function isStable(release: Release): boolean {
+  return !release.draft && !release.prerelease
+}
+
+function isNotFound(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    error.status === 404
+  )
+}
+
 /**
  * Finds the git tag of the latest version, as named upstream.
+ *
+ * @param repo - The repository, as `owner/repo`
+ * @param tagRegex - Only consider releases/tags matching this regex
  */
 export async function findLatestGitHubTag(
   repo: string,
@@ -26,68 +46,54 @@ export async function findLatestGitHubTag(
     auth: process.env.GITHUB_TOKEN,
     request: { fetch: _fetch }
   })
+  const [owner, name] = repo.split('/')
+  const regex = tagRegex ? new RegExp(tagRegex) : undefined
 
-  let releaseData
+  const { data: releases } = await octokit.rest.repos.listReleases({
+    owner,
+    repo: name,
+    per_page: 100
+  })
 
-  try {
-    const { data: releases } = await octokit.rest.repos.listReleases({
-      owner: repo.split('/')[0],
-      repo: repo.split('/')[1],
-      per_page: 100
-    })
+  let validRelease: { tag_name: string } | undefined
 
-    let validRelease
-
-    if (tagRegex) {
-      const regex = new RegExp(tagRegex)
-      validRelease = releases.find(
-        (r: any) => regex.test(r.tag_name) && !r.draft && !r.prerelease
-      )
-    } else {
-      // Fallback: try to fetch latest release directly if no regex is provided
-      try {
-        const { data } = await octokit.rest.repos.getLatestRelease({
-          owner: repo.split('/')[0],
-          repo: repo.split('/')[1]
-        })
-        validRelease = data
-      } catch (err: any) {
-        if (err.status === 404) {
-          validRelease = releases.find((r: any) => !r.draft && !r.prerelease)
-        } else {
-          throw err
-        }
-      }
-    }
-
-    if (validRelease) {
-      releaseData = validRelease
-    } else {
-      // Fallback to tags if no releases match
-      const { data: tags } = await octokit.rest.repos.listTags({
-        owner: repo.split('/')[0],
-        repo: repo.split('/')[1],
-        per_page: 100
+  if (regex) {
+    validRelease = releases.find(
+      release => regex.test(release.tag_name) && isStable(release)
+    )
+  } else {
+    // Try to fetch the latest release directly if no regex is provided
+    try {
+      const { data } = await octokit.rest.repos.getLatestRelease({
+        owner,
+        repo: name
       })
-
-      let validTag
-      if (tagRegex) {
-        const regex = new RegExp(tagRegex)
-        validTag = tags.find((t: any) => regex.test(t.name))
-      } else {
-        validTag = tags[0]
+      validRelease = data
+    } catch (error) {
+      if (!isNotFound(error)) {
+        throw error
       }
-
-      if (!validTag) {
-        throw new Error(
-          `No releases or tags found for repo ${repo} matching criteria`
-        )
-      }
-      releaseData = { tag_name: validTag.name }
+      validRelease = releases.find(isStable)
     }
-  } catch (error: any) {
-    throw error
   }
 
-  return releaseData.tag_name
+  if (validRelease) {
+    return validRelease.tag_name
+  }
+
+  // Fallback to tags if no releases match
+  const { data: tags } = await octokit.rest.repos.listTags({
+    owner,
+    repo: name,
+    per_page: 100
+  })
+  const validTag = regex ? tags.find(tag => regex.test(tag.name)) : tags[0]
+
+  if (!validTag) {
+    throw new Error(
+      `No releases or tags found for repo ${repo} matching criteria`
+    )
+  }
+
+  return validTag.name
 }

@@ -34,7 +34,7 @@ else
     openssl aes-256-cbc -d -a -pbkdf2 -in "$ENC_GPG_PATH" -pass pass:"$ENCRYPTION_KEY" | gpg --import
     
     if [ -f "$PUB_GPG_PATH" ]; then
-        cat "$PUB_GPG_PATH" | gpg --import
+        gpg --import < "$PUB_GPG_PATH"
     fi
 
     KEYID=$(gpg --list-secret-keys --with-colons "$GPG_EMAIL" | grep '^sec' | cut -d: -f5)

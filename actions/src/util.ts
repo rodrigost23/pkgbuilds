@@ -75,7 +75,6 @@ function expandString(node: SyntaxNode, str: string): string {
   return str
 }
 
-
 function parseWord(node: SyntaxNode): string | number {
   const integer = parseInt(node.text)
   return integer.toString() === node.text ? integer : node.text
