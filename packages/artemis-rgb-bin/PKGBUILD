@@ -1,7 +1,7 @@
 # Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
 _pkgname=artemisrgb
 pkgname=artemisrgb-bin
-pkgver=1.2025.0819.0
+pkgver=1.2026.0101.2
 pkgrel=1
 url="https://artemis-rgb.com/"
 pkgdesc="A universal RGB control software"
@@ -12,9 +12,9 @@ license=("custom:PolyForm Noncommercial License 1.0.0")
 depends=("dotnet-runtime" "hicolor-icon-theme" "glibc" "bash" "zlib" "fontconfig" "gcc-libs")
 makedepends=("unzip")
 options=("staticlibs")
-source=("${_pkgname}-${pkgver}.zip::https://updating.artemis-rgb.com/api/artifacts/3795832408"
+source=("${_pkgname}-${pkgver}.zip::https://updating.artemis-rgb.com/api/artifacts/5003513763"
 		"artemis.desktop")
-sha256sums=('424b0abdc63a60709cbc217393c80d1112aa6f97a4b0e6a797c2fd7d59e6a790'
+sha256sums=('633824cdf5596f149eb2b553653bd45d69bc2b64c103aa506e237d12b0c6cde0'
             '6f99b74311bf7607eb4a1dc7ae0feaa1dedebf54e63fce23d190d052d544982a')
 noextract=("${_pkgname}-${pkgver}.zip")
 
