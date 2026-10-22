@@ -1,0 +1,15 @@
+# Built by CI (and only by CI, it lives outside packages/) when the build
+# container changes, to check that the container can build a package: pacman
+# setup, the build user, installing dependencies and makepkg.
+pkgname=container-smoke-test
+pkgver=1
+pkgrel=1
+pkgdesc='Checks the Arch build container'
+arch=('any')
+license=('0BSD')
+makedepends=('tree')
+
+package() {
+	install -d "$pkgdir/usr/share/$pkgname"
+	echo ok > "$pkgdir/usr/share/$pkgname/ok"
+}

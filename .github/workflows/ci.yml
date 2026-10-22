@@ -24,6 +24,7 @@ jobs:
       action: ${{ steps.changes.outputs.action }}
       lint: ${{ steps.changes.outputs.lint }}
       config: ${{ steps.changes.outputs.config }}
+      container: ${{ steps.changes.outputs.container }}
       packages: ${{ steps.changes.outputs.packages }}
     steps:
       - uses: actions/checkout@v7
@@ -40,6 +41,7 @@ jobs:
               echo "action=true"
               echo "lint=true"
               echo "config=true"
+              echo "container=true"
               echo "packages=[]"
             } >> "$GITHUB_OUTPUT"
             exit 0
@@ -54,6 +56,7 @@ jobs:
             echo "action=$(changed '^(actions/|packages-config(\.schema)?\.json$|\.github/workflows/ci\.yml$)')"
             echo "lint=$(changed '^(scripts/|\.github/|packages/)')"
             echo "config=$(changed '^(packages-config(\.schema)?\.json$|packages/[^/]+/PKGBUILD$|scripts/check-config\.py$)')"
+            echo "container=$(changed '^\.github/actions/archlinux/')"
           } >> "$GITHUB_OUTPUT"
 
           # Package directories touched by the change that still exist
@@ -63,11 +66,6 @@ jobs:
               packages="$packages $dir"
             fi
           done
-
-          # Exercise the build container itself when it changed: build a quick package
-          if [ -z "$packages" ] && echo "$files" | grep -qE '^\.github/actions/archlinux/'; then
-            packages="dashlane-cli"
-          fi
 
           echo "packages=$(echo "$packages" | tr ' ' '\n' | grep . | jq -R . | jq -s -c .)" >> "$GITHUB_OUTPUT"
 
@@ -191,6 +189,21 @@ jobs:
       - run: pip install jsonschema==4.26.0
       - run: scripts/check-config.py
 
+  # Check that the build container can still build a package, using a minimal one
+  container:
+    needs: changes
+    if: needs.changes.outputs.container == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build smoke test package
+        uses: ./.github/actions/archlinux
+        with:
+          dir: .github/actions/archlinux/test
+          run: makepkg -sr -C -c --noconfirm --noprogressbar
+
   # Build the packages the change touches, without signing or publishing
   packages:
     needs: changes
@@ -216,7 +229,7 @@ jobs:
   ci:
     name: CI result
     if: always()
-    needs: [changes, action, dist, lint, config, packages]
+    needs: [changes, action, dist, lint, config, container, packages]
     runs-on: ubuntu-latest
     steps:
       - env:

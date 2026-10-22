@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# Sanity checks for every PKGBUILD under packages/: it parses, it sources
+# Sanity checks for every PKGBUILD under packages/ (and the container smoke
+# test package): it parses, it sources
 # cleanly, it defines the mandatory variables, and every source array has a
 # checksum array of the same length. Run from the repository root.
 
 fail=0
 
-for pkgbuild in packages/*/PKGBUILD; do
+for pkgbuild in packages/*/PKGBUILD .github/actions/archlinux/test/PKGBUILD; do
     dir=$(dirname "$pkgbuild")
 
     if ! bash -n "$pkgbuild"; then
