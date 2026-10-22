@@ -154,6 +154,7 @@ jobs:
       - name: Cleanup old release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DELETED_PACKAGES: ${{ needs.change-detection.outputs.deleted }}
         run: |
           cd output
           ../scripts/cleanup-release.sh

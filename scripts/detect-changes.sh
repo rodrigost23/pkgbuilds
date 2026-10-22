@@ -82,11 +82,10 @@ else
 
     # Packages that are published but no longer produced by any PKGBUILD.
     # Skipped when a PKGBUILD couldn't be read, as its names are unknown.
-    # Stale *-debug entries (from before debug packages were disabled) are left alone.
+    # This also covers stale *-debug entries from before debug packages were disabled.
     DELETED=""
     if [ "$PARSE_FAILED" = "false" ]; then
         for name in $PUBLISHED_NAMES; do
-            case "$name" in *-debug) continue ;; esac
             if ! echo "$PRODUCED_NAMES" | tr ' ' '\n' | grep -qxF "$name"; then
                 DELETED="$DELETED $name"
             fi

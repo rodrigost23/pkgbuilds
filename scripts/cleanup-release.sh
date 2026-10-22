@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-# Identifies and deletes older package versions from the GitHub Release
-# to manage storage limits and prevent unbound growth.
+# Identifies and deletes older package versions, and all files of removed
+# packages, from the GitHub Release to manage storage limits and prevent
+# unbound growth.
 
 ALL_ASSETS=$(gh release view repository --json assets --jq '.assets[].name' --repo "$GITHUB_REPOSITORY")
 
@@ -16,3 +17,15 @@ for pkg_file in $NEW_PKGS; do
         gh release delete-asset repository "$old_file" -y --repo "$GITHUB_REPOSITORY" || true
     done
 done
+
+# Files of packages that were removed from the repository. Matches
+# <name>-<[epoch:]pkgver>-<pkgrel>-<arch>.pkg.tar.zst[.sig] exactly, so that
+# removing 'foo' never touches 'foo-bin' or 'foo-debug'.
+if [ -n "$DELETED_PACKAGES" ] && [ "$DELETED_PACKAGES" != "[]" ]; then
+    for pkg in $(echo "$DELETED_PACKAGES" | tr ',' ' ' | tr -d '[]"'); do
+        pkg_regex=$(printf '%s' "$pkg" | sed 's/[][\.*^$+?(){}|/]/\\&/g')
+        for old_file in $(echo "$ALL_ASSETS" | grep -E "^${pkg_regex}-[0-9][^-]*-[^-]+-[^-]+\.pkg\.tar\.zst(\.sig)?$" || true); do
+            gh release delete-asset repository "$old_file" -y --repo "$GITHUB_REPOSITORY" || true
+        done
+    done
+fi
