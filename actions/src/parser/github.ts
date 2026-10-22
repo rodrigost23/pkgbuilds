@@ -1,5 +1,4 @@
 import { Octokit } from 'octokit'
-import { compareVersions } from '../version'
 
 // Saving fetch on another variable because bash-language-server deletes it from global
 const _fetch = fetch
@@ -16,21 +15,12 @@ export function tagToVersion(tagName: string): string {
   return tagName.replace(/^v/, '').replace(/-/g, '_')
 }
 
-export async function findLatestGitHub(
-  repo: string,
-  tagRegex?: string,
-  useTags?: boolean
-): Promise<string> {
-  return tagToVersion(await findLatestGitHubTag(repo, tagRegex, useTags))
-}
-
 /**
  * Finds the git tag of the latest version, as named upstream.
  */
 export async function findLatestGitHubTag(
   repo: string,
-  tagRegex?: string,
-  useTags?: boolean
+  tagRegex?: string
 ): Promise<string> {
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
@@ -99,27 +89,5 @@ export async function findLatestGitHubTag(
     throw error
   }
 
-  let tagName: string = releaseData.tag_name
-
-  // Some repositories only publish tags (no GitHub release) for their newer
-  // versions. When opted in via `use_tags`, consider both and keep the highest.
-  if (useTags) {
-    const { data: tags } = await octokit.rest.repos.listTags({
-      owner: repo.split('/')[0],
-      repo: repo.split('/')[1],
-      per_page: 100
-    })
-    const regex = tagRegex ? new RegExp(tagRegex) : undefined
-
-    for (const tag of tags) {
-      if (regex && !regex.test(tag.name)) {
-        continue
-      }
-      if (compareVersions(tag.name, tagName) > 0) {
-        tagName = tag.name
-      }
-    }
-  }
-
-  return tagName
+  return releaseData.tag_name
 }

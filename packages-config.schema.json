@@ -3,6 +3,52 @@
   "title": "Packages Configuration",
   "type": "object",
   "additionalProperties": false,
+  "definitions": {
+    "tag_regex": {
+      "type": "string",
+      "description": "Only consider tags (or releases for github) matching this regex"
+    },
+    "vars": {
+      "type": "object",
+      "description": "PKGBUILD variables derived from the upstream repository at the new version. Resolved in order; strings can use {pkgver}, {tag} and earlier variables as {name}. A change of these alone bumps pkgrel",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "file", "regex"],
+            "properties": {
+              "type": { "enum": ["upstream_file"] },
+              "file": {
+                "type": "string",
+                "description": "File in the upstream repository, read at the new version's tag"
+              },
+              "regex": {
+                "type": "string",
+                "description": "Regex whose first capture group is the value"
+              },
+              "decode": {
+                "enum": ["url"],
+                "description": "Decode the captured value (e.g. %2B to +)"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "value"],
+            "properties": {
+              "type": { "enum": ["template"] },
+              "value": {
+                "type": "string",
+                "description": "String to expand, e.g. {tag}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
   "properties": {
     "$schema": true,
     "packages": {
@@ -12,6 +58,7 @@
         "^[a-zA-Z0-9\\-_.]+$": {
           "oneOf": [
             {
+              "description": "Versions from the latest GitHub release (falling back to tags)",
               "additionalProperties": false,
               "required": ["type", "repo"],
               "properties": {
@@ -23,58 +70,29 @@
                   "pattern": "^(?!-)[a-zA-Z0-9\\-]{1,39}\\/(?![_\\-\\.])[a-zA-Z0-9_\\-\\.]{1,100}$",
                   "examples": ["owner/repo"]
                 },
-                "tag_regex": {
+                "tag_regex": { "$ref": "#/definitions/tag_regex" },
+                "vars": { "$ref": "#/definitions/vars" }
+              }
+            },
+            {
+              "description": "Versions from the git tags of any repository",
+              "additionalProperties": false,
+              "required": ["type", "url"],
+              "properties": {
+                "type": {
+                  "enum": ["git"]
+                },
+                "url": {
                   "type": "string",
-                  "description": "Optional regex pattern to filter tags when checking for new releases"
+                  "description": "Git URL of the repository",
+                  "examples": ["https://gitlab.com/owner/repo.git"]
                 },
-                "use_tags": {
-                  "type": "boolean",
-                  "description": "Also consider matching git tags, not just releases; picks the highest version"
+                "tag_regex": { "$ref": "#/definitions/tag_regex" },
+                "version_regex": {
+                  "type": "string",
+                  "description": "Regex whose first capture group is the version within a tag, e.g. ^(\\d+\\.\\d+\\.\\d+)-alt\\d+$"
                 },
-                "vars": {
-                  "type": "object",
-                  "description": "PKGBUILD variables derived from the upstream repository at the new version. Resolved in order; strings can use {pkgver}, {tag} and earlier variables as {name}",
-                  "additionalProperties": {
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": ["type", "file", "regex"],
-                        "properties": {
-                          "type": { "enum": ["upstream_file"] },
-                          "file": {
-                            "type": "string",
-                            "description": "File in the upstream repository, read at the new version's tag"
-                          },
-                          "regex": {
-                            "type": "string",
-                            "description": "Regex whose first capture group is the value"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": ["type", "tag", "asset_regex"],
-                        "properties": {
-                          "type": { "enum": ["release_asset"] },
-                          "tag": {
-                            "type": "string",
-                            "description": "Tag of the upstream release holding the asset"
-                          },
-                          "asset_regex": {
-                            "type": "string",
-                            "description": "Regex that must match exactly one asset name"
-                          },
-                          "strip": {
-                            "type": "string",
-                            "description": "Suffix to remove from the asset name"
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
+                "vars": { "$ref": "#/definitions/vars" }
               }
             }
           ]

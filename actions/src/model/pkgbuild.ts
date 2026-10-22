@@ -126,6 +126,38 @@ export class PkgBuild {
     variable.value = value
   }
 
+  /**
+   * Updates the version and the variables derived from upstream, and the
+   * package release accordingly: a new version starts at pkgrel 1, and a
+   * change of derived variables alone (e.g. another upstream tag for the same
+   * version) bumps pkgrel so the new package is published.
+   *
+   * @param version - The new pkgver
+   * @param vars - Variables to set, by name; they must exist in the PKGBUILD
+   * @throws {Error} If a variable is not assigned in the PKGBUILD
+   */
+  update(version: string, vars: Record<string, string> = {}): void {
+    const previous = this.pkgVer.replace(/^(['"])(.*)\1$/, '$2')
+    const varsChanged = Object.entries(vars).some(
+      ([name, value]) => this.getVariable(name) !== value
+    )
+
+    this.pkgVer = version
+    for (const [name, value] of Object.entries(vars)) {
+      this.setVariable(name, value)
+    }
+
+    const pkgrel = this.getVariable('pkgrel')
+    if (pkgrel === undefined) {
+      return
+    }
+    if (version !== previous) {
+      this.setVariable('pkgrel', '1')
+    } else if (varsChanged && /^\d+$/.test(pkgrel)) {
+      this.setVariable('pkgrel', String(Number(pkgrel) + 1))
+    }
+  }
+
   stringify(): string {
     const replacements: { position: Position; value: string }[] = [
       { position: this.positions.pkgVer, value: this.pkgVer },

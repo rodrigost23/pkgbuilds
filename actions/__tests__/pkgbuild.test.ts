@@ -171,4 +171,70 @@ build() {
       expect(() => pkgBuild.setVariable('PYTHON', 'y')).toThrow()
     })
   })
+
+  describe('update', () => {
+    const pkgbuild = `
+pkgver=1.0
+pkgrel=3
+_tag='1.0-alt1'
+source=('http://url/\${_tag}')
+sha256sums=('abc123')
+`
+
+    it('should reset pkgrel for a new version', async () => {
+      const pkgBuild = await PkgBuild.read(pkgbuild)
+
+      pkgBuild.update('1.1', { _tag: '1.1-alt1' })
+
+      expect(pkgBuild.stringify()).toContain(
+        "pkgver=1.1\npkgrel=1\n_tag='1.1-alt1'"
+      )
+    })
+
+    it('should bump pkgrel when only variables change', async () => {
+      const pkgBuild = await PkgBuild.read(pkgbuild)
+
+      pkgBuild.update('1.0', { _tag: '1.0-alt2' })
+
+      expect(pkgBuild.stringify()).toContain(
+        "pkgver=1.0\npkgrel=4\n_tag='1.0-alt2'"
+      )
+    })
+
+    it('should leave everything alone when nothing changed', async () => {
+      const pkgBuild = await PkgBuild.read(pkgbuild)
+
+      pkgBuild.update('1.0', { _tag: '1.0-alt1' })
+
+      expect(pkgBuild.stringify()).toBe(pkgbuild)
+    })
+
+    it('should not bump a pkgrel that is not an integer', async () => {
+      const pkgBuild = await PkgBuild.read(
+        pkgbuild.replace('pkgrel=3', 'pkgrel=3.1')
+      )
+
+      pkgBuild.update('1.0', { _tag: '1.0-alt2' })
+
+      expect(pkgBuild.getVariable('pkgrel')).toBe('3.1')
+    })
+
+    it('should handle a quoted pkgver and a missing pkgrel', async () => {
+      const pkgBuild = await PkgBuild.read(`
+pkgver='1.0'
+source=('a')
+sha256sums=('abc123')
+`)
+
+      pkgBuild.update('1.0')
+      expect(pkgBuild.stringify()).toContain('pkgver=1.0')
+      expect(pkgBuild.getVariable('pkgrel')).toBeUndefined()
+    })
+
+    it('should throw when a variable is missing', async () => {
+      const pkgBuild = await PkgBuild.read(pkgbuild)
+
+      expect(() => pkgBuild.update('1.0', { _nope: 'x' })).toThrow('_nope')
+    })
+  })
 })

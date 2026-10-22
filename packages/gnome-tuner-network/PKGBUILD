@@ -23,7 +23,7 @@ makedepends=(
 	'vala'
 )
 _archive=tuner-network
-_tag="${pkgver}-alt1"
+_tag='0.1.0-alt1'
 source=(
 	"${_archive}-${_tag}.tar.gz::${url}/-/archive/${_tag}/${_archive}-${_tag}.tar.gz"
 	'libnma-gtk4.vapi'
