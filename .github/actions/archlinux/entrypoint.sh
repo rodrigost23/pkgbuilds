@@ -1,6 +1,16 @@
 #!/bin/bash
 set -ex
 pacman-key --init
+
+# Trust the repository's signing key so packages from our own repo (see
+# pacman.conf) can be installed as dependencies. Same steps as the README.
+KEYRING_KEY=packages/rodrigost23-keyring/public.gpg
+if [ -f "$KEYRING_KEY" ]; then
+fingerprint=$(gpg --show-keys --with-colons "$KEYRING_KEY" | awk -F: '/^fpr/ {print $10; exit}')
+pacman-key --add "$KEYRING_KEY"
+pacman-key --lsign-key "$fingerprint"
+fi
+
 pacman -Syuq --noconfirm --noprogressbar --ignore linux --ignore linux-firmware --needed
 
 og=$(stat -c '%u:%g' .)
