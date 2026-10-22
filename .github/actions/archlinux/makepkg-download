@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Download agent for makepkg (see download-agents.conf): `makepkg-download <output> <url>`.
+#
+# Runs curl like makepkg's default agent, but fails instead of hanging when a
+# source server is unavailable or stalls:
+# - curl waits as long as a server asks in its Retry-After header before a
+#   retry (some hosts ask for an hour on a 503), and --retry-delay doesn't
+#   change that. --retry-max-time makes it give up when it can't retry within
+#   the budget.
+# - Recent curl versions then print the error but still exit with 0, so the
+#   download is checked afterwards instead of trusting the exit status.
+# - --speed-limit aborts a transfer that stalls and `timeout` caps the whole
+#   download as a last resort.
+
+output=$1
+url=$2
+
+timeout --foreground 30m \
+    /usr/bin/curl -qgb "" -fLC - \
+    --connect-timeout 30 --speed-limit 10240 --speed-time 60 \
+    --retry 3 --retry-delay 3 --retry-max-time 300 \
+    -o "$output" "$url" || exit
+
+if [ ! -s "$output" ]; then
+    echo "makepkg-download: $url: nothing was downloaded" >&2
+    exit 1
+fi
