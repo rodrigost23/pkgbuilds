@@ -18,13 +18,15 @@ od=$(pwd)
 chown -R build: .
 
 if [ ! -z "${SECRET}" ]; then
-openssl aes-256-cbc -d -a -pbkdf2 -in ${GPG_FILE} -pass pass:${SECRET} | sudo -u build gpg --import
+openssl aes-256-cbc -d -a -pbkdf2 -in "${GPG_FILE}" -pass pass:"${SECRET}" | sudo -u build gpg --import
 unset GPG_FILE
 unset SECRET
 fi
 
-cd $1
+cd "$1"
 shift
+# The command arrives as a single argument (see action.yml), so it must be word-split
+# shellcheck disable=SC2068
 sudo -u build --preserve-env=PACKAGER,GPGKEY,REPO_NAME,DELETED_PACKAGES $@
 
 cd "$od"

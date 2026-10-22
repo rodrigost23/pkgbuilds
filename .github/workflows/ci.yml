@@ -1,0 +1,219 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base commit to compare against (set when re-running CI for a pull request branch)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Decides which of the other jobs have something to check
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.changes.outputs.action }}
+      lint: ${{ steps.changes.outputs.lint }}
+      config: ${{ steps.changes.outputs.config }}
+      packages: ${{ steps.changes.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || inputs.base }}
+        run: |
+          if [ -z "$BASE" ]; then
+            # Nothing to compare with (manual run): check everything but build no package
+            {
+              echo "action=true"
+              echo "lint=true"
+              echo "config=true"
+              echo "packages=[]"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          files=$(git diff --name-only "$BASE...HEAD")
+          echo "Changed files:"
+          echo "$files"
+
+          changed() { echo "$files" | grep -qE "$1" && echo true || echo false; }
+          {
+            echo "action=$(changed '^(actions/|packages-config(\.schema)?\.json$|\.github/workflows/ci\.yml$)')"
+            echo "lint=$(changed '^(scripts/|\.github/|packages/)')"
+            echo "config=$(changed '^(packages-config(\.schema)?\.json$|packages/[^/]+/PKGBUILD$|scripts/check-config\.py$)')"
+          } >> "$GITHUB_OUTPUT"
+
+          # Package directories touched by the change that still exist
+          packages=""
+          for dir in $(echo "$files" | sed -nE 's#^packages/([^/]+)/.*#\1#p' | sort -u); do
+            if [ -f "packages/$dir/PKGBUILD" ]; then
+              packages="$packages $dir"
+            fi
+          done
+
+          # Exercise the build container itself when it changed: build a quick package
+          if [ -z "$packages" ] && echo "$files" | grep -qE '^\.github/actions/archlinux/'; then
+            packages="dashlane-cli"
+          fi
+
+          echo "packages=$(echo "$packages" | tr ' ' '\n' | grep . | jq -R . | jq -s -c .)" >> "$GITHUB_OUTPUT"
+
+  action:
+    needs: changes
+    if: needs.changes.outputs.action == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: actions
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: actions/.nvmrc
+          cache: npm
+          cache-dependency-path: actions/package-lock.json
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+  # actions/dist is committed and is what the update workflow runs, so it must
+  # match the sources. Rebuild it and, on branches of this repository, commit it.
+  dist:
+    needs: changes
+    if: needs.changes.outputs.action == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      BASE: ${{ github.event.pull_request.base.sha || inputs.base }}
+      # Forks only get a read-only token
+      IS_FORK: ${{ github.event.pull_request && github.event.pull_request.head.repo.full_name != github.repository }}
+      PUSHABLE: ${{ github.ref_name != github.event.repository.default_branch || github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: actions/.nvmrc
+          cache: npm
+          cache-dependency-path: actions/package-lock.json
+
+      - name: Build dist
+        working-directory: actions
+        run: |
+          npm ci
+          npm run package
+
+      - name: Commit dist if it changed
+        run: |
+          if git diff --quiet -- actions/dist; then
+            echo "dist is up to date"
+            exit 0
+          fi
+
+          if [ "$IS_FORK" = "true" ] || [ "$PUSHABLE" != "true" ]; then
+            echo "::error::actions/dist is out of date. Run 'npm run bundle' in actions/ and commit the result."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add actions/dist
+          git commit -m "Rebuild dist"
+          git push origin "HEAD:$BRANCH"
+
+          # Pushes made with GITHUB_TOKEN don't trigger workflows, but a manual
+          # run does: check the new commit
+          gh workflow run ci.yml --ref "$BRANCH" ${BASE:+-f base="$BASE"}
+          echo "Rebuilt and pushed dist; CI was started again for the new commit."
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.lint == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: shellcheck
+        run: shellcheck scripts/*.sh .github/actions/archlinux/entrypoint.sh
+
+      - name: actionlint
+        run: |
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+          ./actionlint -color
+
+      - name: PKGBUILDs
+        run: scripts/check-pkgbuilds.sh
+
+  config:
+    needs: changes
+    if: needs.changes.outputs.config == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - run: pip install jsonschema==4.26.0
+      - run: scripts/check-config.py
+
+  # Build the packages the change touches, without signing or publishing
+  packages:
+    needs: changes
+    if: needs.changes.outputs.packages != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.changes.outputs.packages) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Build package
+        uses: ./.github/actions/archlinux
+        with:
+          dir: packages/${{ matrix.package }}
+          run: makepkg -sr -C -c --noconfirm --noprogressbar
+
+  # The single check to require: passes when every job that ran succeeded
+  ci:
+    name: CI result
+    if: always()
+    needs: [changes, action, dist, lint, config, packages]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
