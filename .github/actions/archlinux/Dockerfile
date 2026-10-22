@@ -7,6 +7,10 @@ RUN pacman-key --init && pacman-key --populate archlinux && pacman -Syuq --nocon
 
 RUN echo "OPTIONS+=(!debug)" >> /etc/makepkg.conf
 
+# Make downloads of sources fail fast when a server is unavailable or stalls
+COPY makepkg-download /usr/local/bin/makepkg-download
+COPY download-agents.conf /etc/makepkg.conf.d/download-agents.conf
+
 # Our own published repository, so packages can depend on each other
 # (`makepkg -s` installs makedepends/depends from here). Listed last so the
 # official repositories win on name clashes.

@@ -165,7 +165,7 @@ jobs:
           shellcheck --version
 
       - name: shellcheck
-        run: shellcheck scripts/*.sh .github/actions/archlinux/entrypoint.sh
+        run: shellcheck scripts/*.sh .github/actions/archlinux/entrypoint.sh .github/actions/archlinux/makepkg-download
 
       - name: actionlint
         run: |

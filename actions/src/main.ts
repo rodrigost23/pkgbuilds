@@ -1,13 +1,11 @@
 import * as core from '@actions/core'
-import { createHash } from 'crypto'
 import * as fs from 'fs'
 import { Git } from './git'
 import { Config } from './model/config'
 import { PkgBuild } from './model/pkgbuild'
+import { sha256OfUrl } from './download'
 import { findLatest, gitUrl } from './parser/latest'
 import { resolveVars } from './parser/vars'
-
-const _fetch = fetch
 
 /**
  * The main function for the action.
@@ -94,22 +92,9 @@ export async function run(): Promise<void> {
           }
 
           core.info(`Downloading source ${source} to calculate checksum`)
-          const response = await _fetch(urlMatch[1])
-
-          if (!response.ok) {
-            throw new Error(
-              `Failed to download ${urlMatch[1]}: ${response.statusText}`
-            )
-          }
-
-          const data = new Uint8Array(await response.arrayBuffer())
-          if (data.length > 0) {
-            const checksum = createHash('sha256').update(data).digest('hex')
-            core.info(`Calculated sha256 sum: ${checksum}`)
-            pkgbuild.checksums.push(checksum)
-          } else {
-            throw new Error(`Could not calculate checksum for source ${source}`)
-          }
+          const checksum = await sha256OfUrl(urlMatch[1])
+          core.info(`Calculated sha256 sum: ${checksum}`)
+          pkgbuild.checksums.push(checksum)
         }
         core.debug(`New checksums: ${pkgbuild.checksums.join(', ')}`)
         fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())

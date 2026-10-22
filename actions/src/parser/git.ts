@@ -1,4 +1,4 @@
-import { simpleGit } from 'simple-git'
+import { simpleGit, type SimpleGit } from 'simple-git'
 import { compareVersions } from '../version'
 import { tagToVersion } from './github'
 
@@ -20,15 +20,29 @@ export function gitEnv(): Record<string, string> {
   return { ...env, GIT_TERMINAL_PROMPT: '0' }
 }
 
+/** A git command that prints nothing for this long is killed. */
+export const GIT_BLOCK_TIMEOUT_MS = 2 * 60 * 1000
+
+/**
+ * Creates a git client that never prompts for credentials and gives up on a
+ * stalled host.
+ *
+ * @param baseDir - The directory to run in (the current one by default)
+ */
+export function newGit(baseDir?: string): SimpleGit {
+  return simpleGit({
+    ...(baseDir ? { baseDir } : {}),
+    timeout: { block: GIT_BLOCK_TIMEOUT_MS }
+  }).env(gitEnv())
+}
+
 /**
  * Lists the tags of a git repository, whatever the host.
  *
  * @param url - The repository URL
  */
 export async function listGitTags(url: string): Promise<string[]> {
-  const output = await simpleGit()
-    .env(gitEnv())
-    .listRemote(['--tags', '--refs', url])
+  const output = await newGit().listRemote(['--tags', '--refs', url])
 
   return output
     .split('\n')

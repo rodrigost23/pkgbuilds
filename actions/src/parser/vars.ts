@@ -1,9 +1,8 @@
 import { mkdtemp, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { simpleGit } from 'simple-git'
 import { VarResolver } from '../model/pkgconfig'
-import { gitEnv } from './git'
+import { newGit } from './git'
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -49,21 +48,17 @@ class TagFiles {
 
     if (!this.dir) {
       this.dir = await mkdtemp(join(tmpdir(), 'pkgupdate-'))
-      await simpleGit()
-        .env(gitEnv())
-        .clone(this.url, this.dir, [
-          '--depth=1',
-          '--filter=blob:none',
-          '--no-checkout',
-          '--quiet',
-          '--branch',
-          this.tag
-        ])
+      await newGit().clone(this.url, this.dir, [
+        '--depth=1',
+        '--filter=blob:none',
+        '--no-checkout',
+        '--quiet',
+        '--branch',
+        this.tag
+      ])
     }
 
-    return simpleGit(this.dir)
-      .env(gitEnv())
-      .show([`HEAD:${file}`])
+    return newGit(this.dir).show([`HEAD:${file}`])
   }
 
   async cleanup(): Promise<void> {
