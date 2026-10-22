@@ -17,7 +17,7 @@ og=$(stat -c '%u:%g' .)
 od=$(pwd)
 chown -R build: .
 
-if [ ! -z "${SECRET}" ]; then
+if [ -n "${SECRET}" ]; then
 openssl aes-256-cbc -d -a -pbkdf2 -in "${GPG_FILE}" -pass pass:"${SECRET}" | sudo -u build gpg --import
 unset GPG_FILE
 unset SECRET
