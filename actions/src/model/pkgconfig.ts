@@ -1,8 +1,5 @@
 import { isObject } from '../util'
 
-const githubType = 'github'
-type PkgType = typeof githubType
-
 /**
  * Reads a file from the upstream repository at the new version's tag and
  * returns the first capture group of `regex`.
@@ -11,17 +8,14 @@ export interface UpstreamFileVar {
   type: 'upstream_file'
   file: string
   regex: string
+  /** Decode the captured value (e.g. `%2B` -> `+`) */
+  decode?: 'url'
 }
 
-/**
- * Finds an asset of a release of the upstream repository and returns its
- * name, minus `strip` when given.
- */
-export interface ReleaseAssetVar {
-  type: 'release_asset'
-  tag: string
-  asset_regex: string
-  strip?: string
+/** Expands a template string, e.g. `{tag}` to the upstream tag. */
+export interface TemplateVar {
+  type: 'template'
+  value: string
 }
 
 /**
@@ -29,93 +23,121 @@ export interface ReleaseAssetVar {
  * Strings can reference `{pkgver}`, `{tag}` and previously resolved variables
  * as `{name}`.
  */
-export type VarResolver = UpstreamFileVar | ReleaseAssetVar
+export type VarResolver = UpstreamFileVar | TemplateVar
 
-export interface GitHubPkg {
-  type: typeof githubType
-  repo: string
+interface BasePkg {
+  /** Only consider tags/releases matching this regex */
   tag_regex?: string
-  use_tags?: boolean
+  /** PKGBUILD variables derived from the upstream repository */
   vars?: Record<string, VarResolver>
 }
 
-export type IPackageConfig = GitHubPkg
+/** Versions come from the latest GitHub release (falling back to tags) */
+export interface GitHubPkg extends BasePkg {
+  type: 'github'
+  repo: string
+}
 
-export class PackageConfig implements IPackageConfig {
-  private constructor(
-    readonly type: PkgType,
-    readonly repo: string,
-    readonly tag_regex?: string,
-    readonly use_tags?: boolean,
-    readonly vars?: Record<string, VarResolver>
-  ) {}
+/** Versions come from the git tags of any repository */
+export interface GitPkg extends BasePkg {
+  type: 'git'
+  url: string
+  /** Regex whose first capture group is the version within a tag */
+  version_regex?: string
+}
 
-  /**
-   * Checks if the given object is a valid {@link IPackageConfig}.
-   *
-   * @param obj - The object to check
-   * @returns True if obj is a valid {@link IPackageConfig}, `false` otherwise
-   */
-  static isValidConfig(obj: unknown): obj is IPackageConfig {
-    if (!isObject(obj)) {
-      return false
-    }
+export type IPackageConfig = GitHubPkg | GitPkg
 
-    return (
-      obj?.type === githubType &&
-      typeof obj?.repo === 'string' &&
-      (obj?.use_tags === undefined || typeof obj?.use_tags === 'boolean') &&
-      (obj?.vars === undefined || PackageConfig.isValidVars(obj.vars))
-    )
+function isRegex(value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false
   }
-
-  private static isValidVars(
-    vars: unknown
-  ): vars is Record<string, VarResolver> {
-    if (!isObject(vars)) {
-      return false
-    }
-
-    return Object.values(vars).every(resolver => {
-      if (!isObject(resolver)) {
-        return false
-      }
-      switch (resolver.type) {
-        case 'upstream_file':
-          return (
-            typeof resolver.file === 'string' &&
-            typeof resolver.regex === 'string'
-          )
-        case 'release_asset':
-          return (
-            typeof resolver.tag === 'string' &&
-            typeof resolver.asset_regex === 'string' &&
-            (resolver.strip === undefined || typeof resolver.strip === 'string')
-          )
-        default:
-          return false
-      }
-    })
-  }
-
-  /**
-   * Parses the given JSON string as a {@link PackageConfig} config object.
-   *
-   * @param input - The JSON string to parse
-   * @returns The parsed {@link PackageConfig} object if valid, throws if invalid
-   */
-  static read(input: string): PackageConfig {
-    const config = JSON.parse(input)
-    if (this.isValidConfig(config)) {
-      return new PackageConfig(
-        config.type,
-        config.repo,
-        config.tag_regex,
-        config.use_tags,
-        config.vars
-      )
-    }
-
-    throw new Error('Invalid config')
+  try {
+    new RegExp(value)
+    return true
+  } catch {
+    return false
   }
 }
+
+function isOptionalRegex(value: unknown): boolean {
+  return value === undefined || isRegex(value)
+}
+
+function isValidResolver(resolver: unknown): resolver is VarResolver {
+  if (!isObject(resolver)) {
+    return false
+  }
+
+  switch (resolver.type) {
+    case 'upstream_file':
+      return (
+        typeof resolver.file === 'string' &&
+        isRegex(resolver.regex) &&
+        (resolver.decode === undefined || resolver.decode === 'url')
+      )
+    case 'template':
+      return typeof resolver.value === 'string'
+    default:
+      return false
+  }
+}
+
+function isValidVars(vars: unknown): vars is Record<string, VarResolver> {
+  return isObject(vars) && Object.values(vars).every(isValidResolver)
+}
+
+/**
+ * Checks if the given object is a valid {@link IPackageConfig}.
+ *
+ * @param obj - The object to check
+ * @returns True if obj is a valid {@link IPackageConfig}, `false` otherwise
+ */
+function isValidConfig(obj: unknown): obj is IPackageConfig {
+  if (!isObject(obj)) {
+    return false
+  }
+
+  if (
+    !isOptionalRegex(obj.tag_regex) ||
+    (obj.vars !== undefined && !isValidVars(obj.vars))
+  ) {
+    return false
+  }
+
+  switch (obj.type) {
+    case 'github':
+      return typeof obj.repo === 'string'
+    case 'git':
+      return typeof obj.url === 'string' && isOptionalRegex(obj.version_regex)
+    default:
+      return false
+  }
+}
+
+/**
+ * Parses the given JSON string as a package config object.
+ *
+ * @param input - The JSON string to parse
+ * @returns The parsed {@link IPackageConfig} if valid, throws if invalid
+ */
+function read(input: string): IPackageConfig {
+  const config = JSON.parse(input)
+  if (!isValidConfig(config)) {
+    throw new Error('Invalid config')
+  }
+
+  // Only keep known properties
+  const common = { tag_regex: config.tag_regex, vars: config.vars }
+  if (config.type === 'git') {
+    return {
+      type: 'git',
+      url: config.url,
+      version_regex: config.version_regex,
+      ...common
+    }
+  }
+  return { type: 'github', repo: config.repo, ...common }
+}
+
+export const PackageConfig = { isValidConfig, read }

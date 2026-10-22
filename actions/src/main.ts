@@ -4,7 +4,7 @@ import * as fs from 'fs'
 import { Git } from './git'
 import { Config } from './model/config'
 import { PkgBuild } from './model/pkgbuild'
-import { findLatestGitHubTag, tagToVersion } from './parser/github'
+import { findLatest, gitUrl } from './parser/latest'
 import { resolveVars } from './parser/vars'
 
 const _fetch = fetch
@@ -31,7 +31,9 @@ export async function run(): Promise<void> {
     for (const [id, pkg] of Object.entries(config.packages)) {
       core.startGroup(id)
       core.debug(`Processing package ${id}`)
-      const pkgbuildFile = pkgbuildFiles.find(file => file.includes(id))
+      const pkgbuildFile = pkgbuildFiles.find(
+        file => file === `${packagesPath}/${id}/PKGBUILD`
+      )
 
       if (!pkgbuildFile) {
         core.warning(`No PKGBUILD found for package ${id}`)
@@ -39,104 +41,85 @@ export async function run(): Promise<void> {
       }
       core.debug(`Found PKGBUILD file: ${pkgbuildFile}`)
 
-      if (pkg.type === 'github') {
-        try {
-          let pkgbuild = await PkgBuild.readFile(pkgbuildFile)
-          core.debug(`Original pkgbuild:\n${pkgbuild.stringify()}`)
+      try {
+        let pkgbuild = await PkgBuild.readFile(pkgbuildFile)
+        core.debug(`Original pkgbuild:\n${pkgbuild.stringify()}`)
 
-          // Keep original checksums so SKIP entries are respected
-          const originalChecksums = Array.isArray(pkgbuild.checksums)
-            ? [...pkgbuild.checksums]
-            : []
+        // Keep original checksums so SKIP entries are respected
+        const originalChecksums = Array.isArray(pkgbuild.checksums)
+          ? [...pkgbuild.checksums]
+          : []
 
-          const previousVer = pkgbuild.pkgVer.replace(/^(['"])(.*)\1$/, '$2')
-          const tag = await findLatestGitHubTag(
-            pkg.repo,
-            pkg.tag_regex,
-            pkg.use_tags
-          )
-          pkgbuild.pkgVer = tagToVersion(tag)
-          core.debug(`Latest version: ${pkgbuild.pkgVer}`)
+        const { tag, version } = await findLatest(pkg)
+        core.debug(`Latest version: ${version} (tag ${tag})`)
 
-          // Variables derived from the upstream repository at the new version
-          if (pkg.vars) {
-            const resolved = await resolveVars(
-              pkg.repo,
-              tag,
-              pkgbuild.pkgVer,
-              pkg.vars
-            )
-            for (const [name, value] of Object.entries(resolved)) {
-              core.info(`Resolved ${name}=${value}`)
-              pkgbuild.setVariable(name, value)
-            }
-          }
-
-          // A new upstream version starts a new package release
-          if (
-            pkgbuild.pkgVer !== previousVer &&
-            pkgbuild.getVariable('pkgrel') !== undefined
-          ) {
-            pkgbuild.setVariable('pkgrel', '1')
-          }
-
-          pkgbuild = await PkgBuild.read(pkgbuild.stringify())
-          pkgbuild.checksums = []
-
-          for (let i = 0; i < pkgbuild.sources.length; i++) {
-            const source = pkgbuild.sources[i]
-            const origChecksum = originalChecksums[i]
-
-            // If the original checksum is SKIP, keep SKIP and don't download
-            if (
-              typeof origChecksum === 'string' &&
-              origChecksum.trim().toUpperCase() === 'SKIP'
-            ) {
-              core.info(`Skipping checksum for source ${source} (SKIP)`)
-              pkgbuild.checksums.push('SKIP')
-              continue
-            }
-
-            // If the source is not a URL, preserve the original checksum
-            const urlMatch = source.match(/(?:.*?::)?(https?:\/\/.*$)/)
-            if (!urlMatch) {
-              core.info(
-                `Preserving original checksum for local source ${source}`
-              )
-              pkgbuild.checksums.push(origChecksum || '')
-              continue
-            }
-
-            core.info(`Downloading source ${source} to calculate checksum`)
-            const response = await _fetch(urlMatch[1])
-
-            if (!response.ok) {
-              throw new Error(
-                `Failed to download ${urlMatch[1]}: ${response.statusText}`
-              )
-            }
-
-            const data = new Uint8Array(await response.arrayBuffer())
-            if (data.length > 0) {
-              const checksum = createHash('sha256').update(data).digest('hex')
-              core.info(`Calculated sha256 sum: ${checksum}`)
-              pkgbuild.checksums.push(checksum)
-            } else {
-              throw new Error(
-                `Could not calculate checksum for source ${source}`
-              )
-            }
-          }
-          core.debug(`New checksums: ${pkgbuild.checksums.join(', ')}`)
-          fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
-          core.debug(`New pkgbuild:\n${pkgbuild.stringify()}`)
-
-          packageVersions.set(id, pkgbuild.pkgVer)
-        } catch (error) {
-          core.error(
-            `Failed to process ${id}: ${error instanceof Error ? error.message : error}`
-          )
+        // Variables derived from the upstream repository at the new version
+        const resolved = pkg.vars
+          ? await resolveVars(gitUrl(pkg), tag, version, pkg.vars)
+          : {}
+        for (const [name, value] of Object.entries(resolved)) {
+          core.info(`Resolved ${name}=${value}`)
         }
+        pkgbuild.update(version, resolved)
+
+        pkgbuild = await PkgBuild.read(pkgbuild.stringify())
+        pkgbuild.checksums = []
+
+        for (let i = 0; i < pkgbuild.sources.length; i++) {
+          const source = pkgbuild.sources[i]
+          const origChecksum = originalChecksums[i]
+
+          // If the original checksum is SKIP, keep SKIP and don't download
+          if (
+            typeof origChecksum === 'string' &&
+            origChecksum.trim().toUpperCase() === 'SKIP'
+          ) {
+            core.info(`Skipping checksum for source ${source} (SKIP)`)
+            pkgbuild.checksums.push('SKIP')
+            continue
+          }
+
+          // Version control sources have no file to download, and neither
+          // do local files: preserve the original checksum
+          const urlMatch = source.match(/(?:.*?::)?(https?:\/\/.*$)/)
+          if (
+            !urlMatch ||
+            /^(?:[^:]+::)?(?:git|hg|svn|bzr|fossil)(?:\+|:\/\/)/.test(source)
+          ) {
+            core.info(
+              `Preserving original checksum for local or VCS source ${source}`
+            )
+            pkgbuild.checksums.push(origChecksum || '')
+            continue
+          }
+
+          core.info(`Downloading source ${source} to calculate checksum`)
+          const response = await _fetch(urlMatch[1])
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to download ${urlMatch[1]}: ${response.statusText}`
+            )
+          }
+
+          const data = new Uint8Array(await response.arrayBuffer())
+          if (data.length > 0) {
+            const checksum = createHash('sha256').update(data).digest('hex')
+            core.info(`Calculated sha256 sum: ${checksum}`)
+            pkgbuild.checksums.push(checksum)
+          } else {
+            throw new Error(`Could not calculate checksum for source ${source}`)
+          }
+        }
+        core.debug(`New checksums: ${pkgbuild.checksums.join(', ')}`)
+        fs.writeFileSync(pkgbuildFile, pkgbuild.stringify())
+        core.debug(`New pkgbuild:\n${pkgbuild.stringify()}`)
+
+        packageVersions.set(id, pkgbuild.pkgVer)
+      } catch (error) {
+        core.error(
+          `Failed to process ${id}: ${error instanceof Error ? error.message : error}`
+        )
       }
       core.endGroup()
     }

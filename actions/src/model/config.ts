@@ -1,18 +1,18 @@
 import { PathLike } from 'fs'
 import { readFile } from 'fs/promises'
 import { isObject as isRecord } from '../util'
-import { PackageConfig } from './pkgconfig'
+import { IPackageConfig, PackageConfig } from './pkgconfig'
 
 export interface IConfig {
   packages: {
-    [name: string]: PackageConfig
+    [name: string]: IPackageConfig
   }
 }
 
 export class Config implements IConfig {
   private constructor(
     readonly packages: {
-      [name: string]: PackageConfig
+      [name: string]: IPackageConfig
     }
   ) {}
   static isValidConfig(obj: unknown): obj is IConfig {

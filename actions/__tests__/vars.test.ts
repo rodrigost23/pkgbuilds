@@ -1,37 +1,8 @@
+import { execFileSync } from 'child_process'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 import { expandTemplate, resolveVars } from '../src/parser/vars'
-
-type VarsModule = typeof import('../src/parser/vars')
-
-// vars.ts keeps a reference to fetch taken at import time, so load a copy of
-// the module after replacing it
-function loadWithFetch(fetchMock: jest.Mock): VarsModule {
-  let mod: VarsModule | undefined
-  const originalFetch = global.fetch
-  global.fetch = fetchMock as unknown as typeof fetch
-  try {
-    jest.isolateModules(() => {
-      mod = require('../src/parser/vars')
-    })
-  } finally {
-    global.fetch = originalFetch
-  }
-  return mod as VarsModule
-}
-
-const getReleaseByTag = jest.fn()
-
-jest.mock('octokit', () => ({
-  Octokit: jest.fn().mockImplementation(() => ({
-    rest: { repos: { getReleaseByTag } }
-  }))
-}))
-
-const lockfile = `
-[[package]]
-name = "cef"
-version = "152.3.0+152.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-`
 
 describe('expandTemplate', () => {
   it('should replace known placeholders', () => {
@@ -48,78 +19,119 @@ describe('expandTemplate', () => {
 })
 
 describe('resolveVars', () => {
-  beforeEach(() => {
-    getReleaseByTag.mockReset()
-  })
+  let dir: string
+  let url: string
 
-  it('should resolve chained variables', async () => {
-    const fetchMock = jest.fn()
-    const { resolveVars: resolve } = loadWithFetch(fetchMock)
+  const git = (...args: string[]): void => {
+    execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
+  }
 
-    fetchMock.mockResolvedValue({ ok: true, text: async () => lockfile })
-    getReleaseByTag.mockResolvedValue({
-      data: {
-        assets: [
-          {
-            name: 'cef_binary_152.0.6+gabc+chromium-152.0.1_linux64_minimal.zip'
-          },
-          { name: 'cef_binary_152.0.6+gabc+chromium-152.0.1_linux64.zip' },
-          {
-            name: 'cef_binary_150.0.10+gdef+chromium-150.0.1_linux64_minimal.zip'
-          }
-        ]
-      }
-    })
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vars-test-'))
+    url = `file://${dir}`
+    git('init', '-q')
+    git('config', 'user.email', 'test@example.com')
+    git('config', 'user.name', 'Test')
+    git('config', 'commit.gpgsign', 'false')
 
-    const resolved = await resolve('owner/repo', 'v4.3.4', '4.3.4', {
-      _cefver: {
-        type: 'upstream_file',
-        file: 'Cargo.lock',
-        regex: 'name = "cef"\\nversion = "[^+"]+\\+([0-9.]+)"'
-      },
-      _cefdir: {
-        type: 'release_asset',
-        tag: 'cef-{_cefver}-proprietary-codecs',
-        asset_regex: '^cef_binary_{_cefver}\\+.*_linux64_minimal\\.zip$',
-        strip: '.zip'
-      }
-    })
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://raw.githubusercontent.com/owner/repo/v4.3.4/Cargo.lock'
+    fs.mkdirSync(path.join(dir, 'packaging'))
+    const manifest = (cef: string): string =>
+      `sources:
+  - url: https://example.com/releases/download/cef-${cef}-proprietary-codecs/cef_binary_${cef}%2Bgabc%2Bchromium-1.2.3_linux64_minimal.zip
+  - url: https://example.com/releases/download/cef-${cef}-proprietary-codecs/cef_binary_${cef}%2Bgabc%2Bchromium-1.2.3_linuxarm64_minimal.zip
+`
+    fs.writeFileSync(
+      path.join(dir, 'packaging', 'app.yml'),
+      manifest('150.0.1')
     )
-    expect(getReleaseByTag).toHaveBeenCalledWith({
-      owner: 'owner',
-      repo: 'repo',
-      tag: 'cef-152.0.6-proprietary-codecs'
-    })
-    expect(resolved).toEqual({
+    git('add', '.')
+    git('commit', '-q', '-m', 'one')
+    git('tag', 'v1.0.0')
+
+    fs.writeFileSync(
+      path.join(dir, 'packaging', 'app.yml'),
+      manifest('152.0.6')
+    )
+    git('commit', '-q', '-am', 'two')
+    git('tag', 'v1.1.0')
+  })
+
+  afterAll(() => {
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
+
+  const cefVars = {
+    _cefver: {
+      type: 'upstream_file',
+      file: 'packaging/app.yml',
+      regex: 'releases/download/cef-([0-9.]+)-proprietary-codecs/'
+    },
+    _cefdir: {
+      type: 'upstream_file',
+      file: 'packaging/app.yml',
+      decode: 'url',
+      regex: '/(cef_binary_{_cefver}[^/\\s]*_linux64_minimal)\\.zip'
+    },
+    _tag: { type: 'template', value: 'v{pkgver}' }
+  } as const
+
+  it('should resolve chained variables from the files at the tag', async () => {
+    expect(await resolveVars(url, 'v1.1.0', '1.1.0', cefVars)).toEqual({
       _cefver: '152.0.6',
-      _cefdir: 'cef_binary_152.0.6+gabc+chromium-152.0.1_linux64_minimal'
+      _cefdir: 'cef_binary_152.0.6+gabc+chromium-1.2.3_linux64_minimal',
+      _tag: 'v1.1.0'
     })
   })
 
-  it('should fail when the regex does not match', async () => {
-    const fetchMock = jest.fn()
-    const { resolveVars: resolve } = loadWithFetch(fetchMock)
-    fetchMock.mockResolvedValue({ ok: true, text: async () => 'nothing' })
+  it('should read the file as it was at the tag', async () => {
+    const resolved = await resolveVars(url, 'v1.0.0', '1.0.0', cefVars)
 
+    expect(resolved._cefver).toBe('150.0.1')
+  })
+
+  it('should expose the tag to templates', async () => {
+    expect(
+      await resolveVars(url, 'v1.1.0', '1.1.0', {
+        _tag: { type: 'template', value: '{tag}-{pkgver}' }
+      })
+    ).toEqual({ _tag: 'v1.1.0-1.1.0' })
+  })
+
+  it('should not need the repository for templates only', async () => {
+    expect(
+      await resolveVars('file:///does/not/exist', 'v1', '1', {
+        a: { type: 'template', value: 'x{pkgver}' }
+      })
+    ).toEqual({ a: 'x1' })
+  })
+
+  it('should name the variable that could not be resolved', async () => {
     await expect(
-      resolve('o/r', 'v1', '1', {
-        a: { type: 'upstream_file', file: 'f', regex: 'x(\\d)' }
+      resolveVars(url, 'v1.1.0', '1.1.0', {
+        a: {
+          type: 'upstream_file',
+          file: 'packaging/app.yml',
+          regex: 'nomatch(\\d)'
+        }
+      })
+    ).rejects.toThrow('Failed to resolve a')
+    await expect(
+      resolveVars(url, 'v1.1.0', '1.1.0', {
+        a: { type: 'upstream_file', file: 'missing.yml', regex: '(x)' }
+      })
+    ).rejects.toThrow('Failed to resolve a')
+    await expect(
+      resolveVars(url, 'v9.9.9', '9.9.9', {
+        a: { type: 'upstream_file', file: 'packaging/app.yml', regex: '(x)' }
       })
     ).rejects.toThrow('Failed to resolve a')
   })
 
-  it('should fail unless exactly one asset matches', async () => {
-    getReleaseByTag.mockResolvedValue({
-      data: { assets: [{ name: 'a.zip' }, { name: 'b.zip' }] }
-    })
-
+  it('should refuse paths outside the repository', async () => {
     await expect(
-      resolveVars('o/r', 'v1', '1', {
-        a: { type: 'release_asset', tag: 't', asset_regex: '\\.zip$' }
+      resolveVars(url, 'v1.1.0', '1.1.0', {
+        a: { type: 'upstream_file', file: '../etc/passwd', regex: '(.)' }
       })
-    ).rejects.toThrow('found 2')
+    ).rejects.toThrow('Invalid file path')
   })
 })

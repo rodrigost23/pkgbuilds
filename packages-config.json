@@ -14,21 +14,20 @@
       "repo": "UltraStar-Deluxe/Play"
     },
     "karere": {
-      "type": "github",
-      "repo": "tobagin/karere",
+      "type": "git",
+      "url": "https://github.com/tobagin/karere.git",
       "tag_regex": "^v\\d+\\.\\d+\\.\\d+$",
-      "use_tags": true,
       "vars": {
         "_cefver": {
           "type": "upstream_file",
-          "file": "Cargo.lock",
-          "regex": "name = \"cef\"\\nversion = \"[^+\"]+\\+([0-9.]+)\""
+          "file": "packaging/io.github.tobagin.karere.yml",
+          "regex": "releases/download/cef-([0-9.]+)-proprietary-codecs/"
         },
         "_cefdir": {
-          "type": "release_asset",
-          "tag": "cef-{_cefver}-proprietary-codecs",
-          "asset_regex": "^cef_binary_{_cefver}\\+.*_linux64_minimal\\.zip$",
-          "strip": ".zip"
+          "type": "upstream_file",
+          "file": "packaging/io.github.tobagin.karere.yml",
+          "decode": "url",
+          "regex": "/(cef_binary_[^/\\s]*_linux64_minimal)\\.zip"
         }
       }
     },
@@ -44,6 +43,23 @@
       "type": "github",
       "repo": "Lebbitheplow/open-dungeon-master-client",
       "tag_regex": "^v\\d+\\.\\d+\\.\\d+$"
+    },
+    "gnome-tuner": {
+      "type": "git",
+      "url": "https://altlinux.space/alt-gnome/tuner.git",
+      "tag_regex": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "gnome-tuner-network": {
+      "type": "git",
+      "url": "https://gitlab.eterfund.ru/ximperlinux/tuner-network.git",
+      "tag_regex": "^\\d+\\.\\d+\\.\\d+-alt\\d+$",
+      "version_regex": "^(\\d+\\.\\d+\\.\\d+)-alt\\d+$",
+      "vars": {
+        "_tag": {
+          "type": "template",
+          "value": "{tag}"
+        }
+      }
     }
   }
 }
