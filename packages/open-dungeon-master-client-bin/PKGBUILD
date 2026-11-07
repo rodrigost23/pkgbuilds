@@ -1,7 +1,7 @@
 # Maintainer: Rodrigo Tavares <dev@rodrigotavar.es>
 
 pkgname=open-dungeon-master-client-bin
-pkgver=0.23.3
+pkgver=0.24.0
 pkgrel=1
 pkgdesc="Desktop client for Open Dungeon Master, the self-hostable TTRPG platform"
 arch=('x86_64')
@@ -22,7 +22,7 @@ optdepends=('libappindicator-gtk3: system tray icon support')
 provides=('open-dungeon-master-client')
 options=('!strip')
 source=("open-dungeon-master-client-${pkgver}-x64.tar.gz::https://github.com/Lebbitheplow/open-dungeon-master-client/releases/download/v${pkgver}/open-dungeon-master-client-${pkgver}-x64.tar.gz")
-sha256sums=('f7a357ab8adbfc6e4b9fcc8b35459c2c29d64288a22b6f00c2f75a5d1693c150')
+sha256sums=('a0d8919ae622612bab3d1ee0c7df811bcf07181340efe8d9e70101ae89dc5c1d')
 
 package() {
 	cd "$srcdir/open-dungeon-master-client-${pkgver}-x64"
