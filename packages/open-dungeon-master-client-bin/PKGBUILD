@@ -25,7 +25,7 @@ source=("open-dungeon-master-client-${pkgver}-x64.tar.gz::https://github.com/Leb
 sha256sums=('4663416eab8418f148f88bbd9c7aeede04f34ba0d054c1deec990d5cc034fb30')
 
 package() {
-	cd "$srcdir/open-dungeon-master-client-${pkgver}-x64"
+	cd "$srcdir/open-game-master-client-${pkgver}-x64"
 	install -dm755 "$pkgdir/opt/open-dungeon-master"
 	cp -a . "$pkgdir/opt/open-dungeon-master/"
 
